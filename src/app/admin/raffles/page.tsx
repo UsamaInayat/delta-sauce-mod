@@ -1,0 +1,115 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+
+type SavedRaffle = {
+  id: string;
+  slug: string;
+  title: string;
+  type: string;
+  status: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  _count: { entries: number };
+};
+
+export default function SavedRafflesPage() {
+  const [raffles, setRaffles] = useState<SavedRaffle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void fetch("/api/admin/raffles")
+      .then((r) => r.json())
+      .then((d) => setRaffles(d.raffles ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function publish(id: string) {
+    await fetch(`/api/admin/raffles/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "publish" }),
+    });
+    window.location.reload();
+  }
+
+  async function finalize(id: string) {
+    await fetch(`/api/admin/raffles/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "finalize" }),
+    });
+    window.location.reload();
+  }
+
+  async function logout() {
+    await fetch("/api/admin/auth", { method: "DELETE" });
+    window.location.href = "/admin/login";
+  }
+
+  return (
+    <DeltaAdminShell pageTitle="Saved Raffles">
+      <div className="al-admin-panel">
+        <div className="al-admin-toolbar">
+          <h1 className="al-admin-title">Saved Raffles</h1>
+          <button type="button" className="al-admin-btn" onClick={logout}>
+            Logout
+          </button>
+        </div>
+
+        {loading ? (
+          <p>Loading…</p>
+        ) : raffles.length === 0 ? (
+          <p>No raffles yet. <Link href="/admin/raffles/new">Create one</Link>.</p>
+        ) : (
+          <table className="al-admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Entries</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {raffles.map((r) => {
+                const lifecycle = getRaffleLifecycleLabel({
+                  status: r.status as "DRAFT" | "PUBLISHED" | "CLOSED",
+                  startsAt: r.startsAt ? new Date(r.startsAt) : null,
+                  endsAt: r.endsAt ? new Date(r.endsAt) : null,
+                });
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <Link href={`/raffles/${r.slug}`}>{r.title}</Link>
+                    </td>
+                    <td>{r.type.replace(/_/g, " ")}</td>
+                    <td>{lifecycle}</td>
+                    <td>{r._count.entries}</td>
+                    <td className="al-admin-actions">
+                      <Link href={`/admin/raffles/${r.id}/edit`}>Edit</Link>
+                      {r.status === "DRAFT" ? (
+                        <button type="button" onClick={() => publish(r.id)}>
+                          Publish
+                        </button>
+                      ) : null}
+                      {lifecycle === "ENDED" || lifecycle === "LIVE" ? (
+                        <button type="button" onClick={() => finalize(r.id)}>
+                          Finalize
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </DeltaAdminShell>
+  );
+}

@@ -1,0 +1,442 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { TimePresetTag } from "@/components/admin/time-preset-tag";
+import {
+  formatCountdown,
+  toDateTimeLocalInputValue,
+} from "@/lib/datetime/local-input";
+
+const RAFFLE_TYPES = [
+  { value: "LUCKY_DRAW", label: "Lucky Draw" },
+  { value: "FCFS", label: "FCFS Wallet Collection" },
+  { value: "WALLET_COLLECTION", label: "Wallet Collection" },
+  { value: "ARTWORK_GIVEAWAY", label: "Artwork Giveaway" },
+] as const;
+
+const CHAINS = [
+  "ETHEREUM",
+  "BASE",
+  "POLYGON",
+  "ARBITRUM",
+  "OPTIMISM",
+  "BITCOIN",
+  "SOLANA",
+  "XTZ",
+] as const;
+
+type Collection = { id: string; name: string };
+
+function addHours(base: Date, hours: number) {
+  return new Date(base.getTime() + hours * 3600_000);
+}
+
+export default function AdminRaffleForm({
+  raffleId,
+}: {
+  raffleId?: string;
+}) {
+  const router = useRouter();
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const [form, setForm] = useState({
+    title: "",
+    phase: "",
+    artist: "",
+    description: "",
+    type: "LUCKY_DRAW",
+    chain: "ETHEREUM",
+    startsAt: "",
+    endsAt: "",
+    winnerCount: "1",
+    spotCap: "",
+    autoFinalize: true,
+    tokenGated: false,
+    collectionIds: [] as string[],
+    itemName: "",
+    openseaUrl: "",
+    artworkCollection: "",
+  });
+
+  useEffect(() => {
+    void fetch("/api/admin/collections")
+      .then((r) => r.json())
+      .then((d) => setCollections(d.collections ?? []));
+  }, []);
+
+  useEffect(() => {
+    if (!raffleId) return;
+    void fetch("/api/admin/raffles")
+      .then((r) => r.json())
+      .then((d) => {
+        const raffle = (d.raffles ?? []).find(
+          (r: { id: string }) => r.id === raffleId,
+        );
+        if (!raffle) return;
+        setForm({
+          title: raffle.title ?? "",
+          phase: raffle.phase ?? "",
+          artist: raffle.artist ?? "",
+          description: raffle.description ?? "",
+          type: raffle.type ?? "LUCKY_DRAW",
+          chain: raffle.chain ?? "ETHEREUM",
+          startsAt: toDateTimeLocalInputValue(raffle.startsAt),
+          endsAt: toDateTimeLocalInputValue(raffle.endsAt),
+          winnerCount: String(raffle.winnerCount ?? 1),
+          spotCap: raffle.spotCap ? String(raffle.spotCap) : "",
+          autoFinalize: raffle.autoFinalize !== false,
+          tokenGated: Boolean(raffle.tokenGated),
+          collectionIds: (raffle.collections ?? []).map(
+            (c: { collectionId: string }) => c.collectionId,
+          ),
+          itemName: raffle.itemName ?? "",
+          openseaUrl: raffle.openseaUrl ?? "",
+          artworkCollection: raffle.artworkCollection ?? "",
+        });
+      });
+  }, [raffleId]);
+
+  const countdown = useMemo(() => {
+    if (!form.endsAt) return "24:00:00";
+    const end = new Date(form.endsAt);
+    return formatCountdown(end.getTime() - Date.now());
+  }, [form.endsAt]);
+
+  function setEndsFromPreset(hours: number) {
+    const base = form.startsAt ? new Date(form.startsAt) : new Date();
+    setForm((f) => ({
+      ...f,
+      endsAt: toDateTimeLocalInputValue(addHours(base, hours)),
+    }));
+  }
+
+  async function saveDraft() {
+    setSaving(true);
+    setMessage("");
+    const url = raffleId ? `/api/admin/raffles/${raffleId}` : "/api/admin/raffles";
+    const method = raffleId ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Save failed");
+      return;
+    }
+    setMessage("Draft saved.");
+    if (!raffleId) router.push(`/admin/raffles/${data.raffle.id}/edit`);
+  }
+
+  async function publish() {
+    setSaving(true);
+    setMessage("");
+    let id = raffleId;
+    if (!id) {
+      const create = await fetch("/api/admin/raffles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const created = await create.json();
+      if (!create.ok) {
+        setSaving(false);
+        setMessage(created.error ?? "Create failed");
+        return;
+      }
+      id = created.raffle.id;
+    } else {
+      await fetch(`/api/admin/raffles/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+    }
+
+    const res = await fetch(`/api/admin/raffles/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "publish" }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setMessage(data.error ?? "Publish failed");
+      return;
+    }
+    setMessage("Published.");
+    router.push("/admin/raffles");
+  }
+
+  const isArtwork = form.type === "ARTWORK_GIVEAWAY";
+
+  return (
+    <DeltaAdminShell pageTitle={raffleId ? "Edit Raffle" : "Create Raffle"}>
+      <div className="al-admin-panel al-admin-form-wide">
+        <h1 className="al-admin-title">
+          {raffleId ? "Edit Raffle" : "Create Raffle"}
+        </h1>
+
+        <div className="al-admin-field-row">
+          <label className="al-admin-label">
+            Raffle Type
+            <select
+              className="al-admin-input"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
+              {RAFFLE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="al-admin-label">
+            Countdown Preview
+            <input className="al-admin-input mono" readOnly value={countdown} />
+          </label>
+        </div>
+
+        {isArtwork ? (
+          <>
+            <label className="al-admin-label">
+              Item Name
+              <input
+                className="al-admin-input"
+                value={form.itemName}
+                onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              />
+            </label>
+            <label className="al-admin-label">
+              OpenSea Link
+              <input
+                className="al-admin-input"
+                value={form.openseaUrl}
+                onChange={(e) => setForm({ ...form, openseaUrl: e.target.value })}
+                placeholder="https://opensea.io/item/..."
+              />
+            </label>
+            <label className="al-admin-label">
+              Collection
+              <input
+                className="al-admin-input"
+                value={form.artworkCollection}
+                onChange={(e) =>
+                  setForm({ ...form, artworkCollection: e.target.value })
+                }
+              />
+            </label>
+            <label className="al-admin-label">
+              Winners
+              <input
+                className="al-admin-input"
+                type="number"
+                min={1}
+                value={form.winnerCount}
+                onChange={(e) => setForm({ ...form, winnerCount: e.target.value })}
+              />
+            </label>
+          </>
+        ) : null}
+
+        <label className="al-admin-label">
+          Raffle Title
+          <input
+            className="al-admin-input"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+        </label>
+
+        <div className="al-admin-field-row">
+          <label className="al-admin-label">
+            Phase
+            <input
+              className="al-admin-input"
+              value={form.phase}
+              onChange={(e) => setForm({ ...form, phase: e.target.value })}
+            />
+          </label>
+          <label className="al-admin-label">
+            Chain
+            <select
+              className="al-admin-input"
+              value={form.chain}
+              onChange={(e) => setForm({ ...form, chain: e.target.value })}
+            >
+              {CHAINS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="al-admin-label">
+          Artist
+          <input
+            className="al-admin-input"
+            value={form.artist}
+            onChange={(e) => setForm({ ...form, artist: e.target.value })}
+          />
+        </label>
+
+        <label className="al-admin-label">
+          Description
+          <textarea
+            className="al-admin-textarea"
+            rows={6}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Supports **bold** and *italic* markers"
+          />
+        </label>
+
+        <div className="al-admin-field-row">
+          <label className="al-admin-label">
+            Starts at
+            <input
+              className="al-admin-input"
+              type="datetime-local"
+              value={form.startsAt}
+              onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+            />
+          </label>
+          <label className="al-admin-label">
+            Ends at
+            <input
+              className="al-admin-input"
+              type="datetime-local"
+              value={form.endsAt}
+              onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+            />
+          </label>
+        </div>
+
+        <div className="al-admin-presets">
+          <TimePresetTag label="6h" onClick={() => setEndsFromPreset(6)} />
+          <TimePresetTag label="12h" onClick={() => setEndsFromPreset(12)} />
+          <TimePresetTag label="24h" onClick={() => setEndsFromPreset(24)} />
+          <TimePresetTag label="48h" onClick={() => setEndsFromPreset(48)} />
+          <TimePresetTag label="72h" onClick={() => setEndsFromPreset(72)} />
+        </div>
+
+        {form.type === "FCFS" ? (
+          <label className="al-admin-label">
+            Spot cap
+            <input
+              className="al-admin-input"
+              type="number"
+              min={1}
+              value={form.spotCap}
+              onChange={(e) => setForm({ ...form, spotCap: e.target.value })}
+            />
+          </label>
+        ) : null}
+
+        {!isArtwork && form.type !== "WALLET_COLLECTION" ? (
+          <label className="al-admin-label">
+            Winners
+            <input
+              className="al-admin-input"
+              type="number"
+              min={1}
+              value={form.winnerCount}
+              onChange={(e) => setForm({ ...form, winnerCount: e.target.value })}
+            />
+          </label>
+        ) : null}
+
+        <fieldset className="al-admin-fieldset">
+          <legend>Is it a token gated raffle?</legend>
+          <button
+            type="button"
+            className={`al-admin-toggle${form.tokenGated ? " active" : ""}`}
+            onClick={() => setForm({ ...form, tokenGated: true })}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            className={`al-admin-toggle${!form.tokenGated ? " active" : ""}`}
+            onClick={() => setForm({ ...form, tokenGated: false, collectionIds: [] })}
+          >
+            No
+          </button>
+        </fieldset>
+
+        {form.tokenGated ? (
+          <label className="al-admin-label">
+            Eligible collections
+            <select
+              className="al-admin-input"
+              multiple
+              value={form.collectionIds}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  collectionIds: Array.from(e.target.selectedOptions).map(
+                    (o) => o.value,
+                  ),
+                })
+              }
+            >
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        <fieldset className="al-admin-fieldset">
+          <legend>Should the raffle end automatically?</legend>
+          <button
+            type="button"
+            className={`al-admin-toggle${form.autoFinalize ? " active" : ""}`}
+            onClick={() => setForm({ ...form, autoFinalize: true })}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            className={`al-admin-toggle${!form.autoFinalize ? " active" : ""}`}
+            onClick={() => setForm({ ...form, autoFinalize: false })}
+          >
+            No
+          </button>
+        </fieldset>
+
+        {message ? <p className="al-admin-msg">{message}</p> : null}
+
+        <div className="al-admin-btn-row">
+          <button
+            type="button"
+            className="al-admin-btn"
+            disabled={saving}
+            onClick={saveDraft}
+          >
+            Save Draft
+          </button>
+          <button
+            type="button"
+            className="al-admin-btn primary"
+            disabled={saving}
+            onClick={publish}
+          >
+            Publish
+          </button>
+        </div>
+      </div>
+    </DeltaAdminShell>
+  );
+}

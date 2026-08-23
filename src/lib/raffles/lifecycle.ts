@@ -1,0 +1,40 @@
+import { RaffleStatus } from "@prisma/client";
+
+export type RaffleLifecycleLabel =
+  | "DRAFT"
+  | "SCHEDULED"
+  | "LIVE"
+  | "ENDED"
+  | "FINALIZED";
+
+export type RaffleLifecycleInput = {
+  status: RaffleStatus;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+};
+
+export function getRaffleLifecycleLabel(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+): RaffleLifecycleLabel {
+  if (raffle.status === RaffleStatus.CLOSED) return "FINALIZED";
+  if (raffle.status !== RaffleStatus.PUBLISHED) return "DRAFT";
+  if (raffle.endsAt && raffle.endsAt <= now) return "ENDED";
+  if (raffle.startsAt && raffle.startsAt > now) return "SCHEDULED";
+  return "LIVE";
+}
+
+export function isRaffleEnterable(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+) {
+  return getRaffleLifecycleLabel(raffle, now) === "LIVE";
+}
+
+export function isRaffleLockedFromEdits(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+) {
+  const label = getRaffleLifecycleLabel(raffle, now);
+  return label === "ENDED" || label === "FINALIZED";
+}

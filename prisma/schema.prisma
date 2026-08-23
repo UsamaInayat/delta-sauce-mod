@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RaffleType {
+  LUCKY_DRAW
+  FCFS
+  WALLET_COLLECTION
+  ARTWORK_GIVEAWAY
+}
+
+enum RaffleChain {
+  ETHEREUM
+  BASE
+  POLYGON
+  ARBITRUM
+  OPTIMISM
+  BITCOIN
+  SOLANA
+  XTZ
+}
+
+enum RaffleStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum EntryStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXCLUDED
+}
+
+model Collection {
+  id              String   @id @default(cuid())
+  name            String
+  contractAddress String
+  chain           RaffleChain
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  raffleLinks RaffleCollection[]
+  snapshots   CollectionSnapshot[]
+
+  @@unique([contractAddress, chain])
+}
+
+model CollectionSnapshot {
+  id           String   @id @default(cuid())
+  collectionId String
+  takenAt      DateTime @default(now())
+  source       String   @default("manual")
+  raffleId     String?
+
+  collection Collection        @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  raffle     Raffle?           @relation(fields: [raffleId], references: [id], onDelete: SetNull)
+  holders    SnapshotHolder[]
+
+  @@index([collectionId, takenAt])
+}
+
+model SnapshotHolder {
+  id             String @id @default(cuid())
+  snapshotId     String
+  walletAddress  String
+  balance        Int    @default(1)
+
+  snapshot CollectionSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId, walletAddress])
+}
+
+model Raffle {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  title         String
+  phase         String?
+  artist        String?
+  description   String       @default("") @db.Text
+  type          RaffleType   @default(LUCKY_DRAW)
+  status        RaffleStatus @default(DRAFT)
+  chain         RaffleChain  @default(ETHEREUM)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  publishedAt   DateTime?
+  closedAt      DateTime?
+  winnerCount   Int?
+  spotCap       Int?
+  autoFinalize  Boolean      @default(true)
+  tokenGated    Boolean      @default(false)
+  liveSnapshotAt DateTime?
+
+  itemName          String?
+  openseaUrl        String?
+  artworkImage      String?
+  artworkCollection String?
+
+  collections   RaffleCollection[]
+  entries       RaffleEntry[]
+  snapshots     CollectionSnapshot[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RaffleCollection {
+  raffleId     String
+  collectionId String
+
+  raffle     Raffle     @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([raffleId, collectionId])
+}
+
+model RaffleEntry {
+  id            String      @id @default(cuid())
+  raffleId      String
+  walletAddress String
+  walletEns     String?
+  xHandle       String
+  status        EntryStatus @default(SUBMITTED)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  raffle Raffle @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+
+  @@unique([raffleId, walletAddress])
+  @@unique([raffleId, xHandle])
+  @@index([raffleId, status])
+}
