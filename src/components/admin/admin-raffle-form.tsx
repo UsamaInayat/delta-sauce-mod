@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { TimePresetTag } from "@/components/admin/time-preset-tag";
-import { toDateTimeLocalInputValue, parseDateTimeLocalValue } from "@/lib/datetime/local-input";
+import { toDateTimeLocalInputValue, parseDateTimeLocalValue, localInputToIso } from "@/lib/datetime/local-input";
 
 const RAFFLE_TYPES = [
   { value: "LUCKY_DRAW", label: "Lucky Draw" },
@@ -151,21 +151,26 @@ export default function AdminRaffleForm({
     }
     const raffle = data.raffle as LoadedRaffle;
     setRaffleStatus(raffle.status ?? "DRAFT");
-    setForm(raffleToForm(raffle));
     return raffle;
   }
 
   function buildPayload() {
+    const dates = {
+      startsAt: form.startsAt ? localInputToIso(form.startsAt) : null,
+      endsAt: form.endsAt ? localInputToIso(form.endsAt) : null,
+    };
+
     if (form.type === "ARTWORK_GIVEAWAY") {
       return {
         ...form,
+        ...dates,
         title: form.itemName.trim() || form.title.trim(),
         phase: "",
         artist: "",
         description: "",
       };
     }
-    return form;
+    return { ...form, ...dates };
   }
 
   async function ensureRaffleId(): Promise<string> {
@@ -233,9 +238,7 @@ export default function AdminRaffleForm({
       }
 
       const data = await res.json();
-      const raffle = data.raffle as LoadedRaffle;
-      setRaffleStatus(raffle.status ?? "PUBLISHED");
-      setForm(raffleToForm(raffle));
+      setRaffleStatus(data.raffle?.status ?? "PUBLISHED");
       setMessage("Published.");
       router.push("/admin/raffles");
     } catch (error) {
@@ -490,20 +493,22 @@ export default function AdminRaffleForm({
         <div className="al-admin-btn-row">
           <button
             type="button"
-            className="al-admin-btn"
+            className="al-admin-btn primary"
             disabled={saving}
             onClick={save}
           >
             Save
           </button>
-          <button
-            type="button"
-            className="al-admin-btn primary"
-            disabled={saving}
-            onClick={publishRaffle}
-          >
-            Publish
-          </button>
+          {!raffleId ? (
+            <button
+              type="button"
+              className="al-admin-btn"
+              disabled={saving}
+              onClick={publishRaffle}
+            >
+              Publish
+            </button>
+          ) : null}
         </div>
       </DeltaAdminWindow>
     </DeltaAdminShell>

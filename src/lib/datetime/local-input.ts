@@ -1,6 +1,7 @@
 const DATE_TIME_LOCAL_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
 
+/** Parse a datetime-local string in the user's browser timezone. */
 export function parseDateTimeLocalValue(value: string): Date | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -20,14 +21,58 @@ export function parseDateTimeLocalValue(value: string): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/** Serialize browser-local input to UTC ISO for API/storage. */
+export function localInputToIso(value: string): string | null {
+  const parsed = parseDateTimeLocalValue(value);
+  return parsed ? parsed.toISOString() : null;
+}
+
+/** Format a stored instant for datetime-local inputs (browser local time). */
 export function toDateTimeLocalInputValue(
   value: string | Date | null | undefined,
 ): string {
   if (!value) return "";
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    const localMatch = DATE_TIME_LOCAL_PATTERN.exec(trimmed);
+    if (localMatch) {
+      return `${localMatch[1]}-${localMatch[2]}-${localMatch[3]}T${localMatch[4]}:${localMatch[5]}`;
+    }
+  }
+
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const pad = (part: number) => String(part).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Format a stored instant for display in the user's local timezone. */
+export function formatLocalDateTime(
+  value: string | Date | null | undefined,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  if (!value) return "TBA";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "TBA";
+  return date.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    ...options,
+  });
+}
+
+export function parseStoredDateTime(value: unknown): Date | null {
+  if (value == null || value === "") return null;
+  const str = String(value).trim();
+  if (DATE_TIME_LOCAL_PATTERN.test(str)) {
+    return parseDateTimeLocalValue(str);
+  }
+  const parsed = new Date(str);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 export function formatCountdown(ms: number) {

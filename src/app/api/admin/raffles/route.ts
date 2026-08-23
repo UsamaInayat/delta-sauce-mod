@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
-import { parseDateTimeLocalValue } from "@/lib/datetime/local-input";
+import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { fetchOpenseaNft } from "@/lib/blockchain/holdings";
 import { takeRaffleLiveSnapshots } from "@/lib/raffles/finalize";
 
@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
         type === RaffleType.ARTWORK_GIVEAWAY ? "" : (body.description ?? ""),
       type,
       chain: body.chain ?? "ETHEREUM",
-      startsAt: body.startsAt ? parseDateTimeLocalValue(body.startsAt) : null,
-      endsAt: body.endsAt ? parseDateTimeLocalValue(body.endsAt) : null,
+      startsAt: parseStoredDateTime(body.startsAt),
+      endsAt: parseStoredDateTime(body.endsAt),
       winnerCount: body.winnerCount ? Number(body.winnerCount) : null,
       spotCap: body.spotCap ? Number(body.spotCap) : null,
       autoFinalize: body.autoFinalize !== false,

@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
-import { parseDateTimeLocalValue } from "@/lib/datetime/local-input";
+import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { takeRaffleLiveSnapshots } from "@/lib/raffles/finalize";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 
 function parseOptionalDate(value: unknown) {
-  if (value == null || value === "") return null;
-  return parseDateTimeLocalValue(String(value));
+  return parseStoredDateTime(value);
 }
 
 function buildUpdateData(body: Record<string, unknown>) {

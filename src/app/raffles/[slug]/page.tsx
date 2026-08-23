@@ -11,6 +11,7 @@ import {
   isValidWalletOrEns,
   isValidXHandle,
 } from "@/lib/wallet/validate";
+import { formatLocalDateTime } from "@/lib/datetime/local-input";
 
 type RafflePayload = {
   slug: string;
@@ -42,18 +43,6 @@ type RafflePayload = {
     wallet: string;
   } | null;
 };
-
-function formatDropDate(iso: string | null) {
-  if (!iso) return "TBA";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default function RaffleDetailPage({
   params,
@@ -198,7 +187,7 @@ export default function RaffleDetailPage({
           : undefined,
       supply: "TBA",
       mintPrice: "TBA",
-      dropDate: formatDropDate(raffle.endsAt),
+      dropDate: formatLocalDateTime(raffle.endsAt),
       usedFor: raffle.phase ?? raffle.type.replace(/_/g, " "),
       artist: raffle.artist ?? "DeltaSauce",
       eligibleCollections: raffle.collections.map((c) => c.name),
@@ -286,7 +275,7 @@ export default function RaffleDetailPage({
               <p className="arena-form-sub">
                 This raffle is <strong>{raffle.lifecycle.toLowerCase()}</strong>.
                 {raffle.lifecycle === "SCHEDULED"
-                  ? ` Opens ${formatDropDate(raffle.startsAt)}.`
+                  ? ` Opens ${formatLocalDateTime(raffle.startsAt)}.`
                   : null}
               </p>
               <p className="al-countdown-display">Ends in {countdown}</p>
