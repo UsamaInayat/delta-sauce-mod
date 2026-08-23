@@ -3,4 +3,4 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
-releaseCommand = "npx prisma migrate deploy"
+releaseCommand = "npx prisma migrate deploy || npx prisma db push --skip-generate"
