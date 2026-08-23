@@ -1,14 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 
-// Vercel Postgres injects POSTGRES_* vars; Prisma expects DATABASE_URL.
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL =
-    process.env.POSTGRES_PRISMA_URL ??
-    process.env.POSTGRES_URL ??
-    process.env.POSTGRES_URL_NON_POOLING ??
-    "";
-}
-
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 export const prisma =
