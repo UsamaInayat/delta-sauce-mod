@@ -46,6 +46,21 @@ export default function SavedRafflesPage() {
     window.location.reload();
   }
 
+  async function removeDraft(id: string, title: string) {
+    if (!window.confirm(`Delete draft "${title}"? This cannot be undone.`)) {
+      return;
+    }
+
+    const res = await fetch(`/api/admin/raffles/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json();
+      window.alert(data.error ?? "Delete failed");
+      return;
+    }
+
+    setRaffles((prev) => prev.filter((r) => r.id !== id));
+  }
+
   async function logout() {
     await fetch("/api/admin/auth", { method: "DELETE" });
     window.location.href = "/admin/login";
@@ -95,14 +110,36 @@ export default function SavedRafflesPage() {
                     <td>{lifecycle}</td>
                     <td>{r._count.entries}</td>
                     <td className="al-admin-actions">
-                      <Link href={`/admin/raffles/${r.id}/edit`}>Edit</Link>
+                      <Link
+                        href={`/admin/raffles/${r.id}/edit`}
+                        className="al-admin-btn"
+                      >
+                        Edit
+                      </Link>
                       {r.status === "DRAFT" ? (
-                        <button type="button" onClick={() => publish(r.id)}>
-                          Publish
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="al-admin-btn"
+                            onClick={() => publish(r.id)}
+                          >
+                            Publish
+                          </button>
+                          <button
+                            type="button"
+                            className="al-admin-btn"
+                            onClick={() => removeDraft(r.id, r.title)}
+                          >
+                            Delete
+                          </button>
+                        </>
                       ) : null}
                       {lifecycle === "ENDED" || lifecycle === "LIVE" ? (
-                        <button type="button" onClick={() => finalize(r.id)}>
+                        <button
+                          type="button"
+                          className="al-admin-btn"
+                          onClick={() => finalize(r.id)}
+                        >
                           Finalize
                         </button>
                       ) : null}

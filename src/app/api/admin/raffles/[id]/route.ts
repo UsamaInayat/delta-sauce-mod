@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RaffleStatus } from "@prisma/client";
+import { RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseDateTimeLocalValue } from "@/lib/datetime/local-input";
@@ -17,14 +17,18 @@ export async function PATCH(
   }
   const { id } = await ctx.params;
   const body = await req.json();
+  const isArtwork = body.type === RaffleType.ARTWORK_GIVEAWAY;
+  const title = isArtwork
+    ? String(body.itemName ?? body.title ?? "").trim()
+    : String(body.title ?? "").trim();
 
   const raffle = await prisma.raffle.update({
     where: { id },
     data: {
-      title: body.title,
-      phase: body.phase,
-      artist: body.artist,
-      description: body.description,
+      title: title || undefined,
+      phase: isArtwork ? null : body.phase,
+      artist: isArtwork ? null : body.artist,
+      description: isArtwork ? "" : body.description,
       type: body.type,
       chain: body.chain,
       startsAt: body.startsAt
@@ -93,4 +97,32 @@ export async function POST(
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  try {
+    await requireAdminSession();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await ctx.params;
+  const raffle = await prisma.raffle.findUnique({ where: { id } });
+
+  if (!raffle) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (raffle.status !== RaffleStatus.DRAFT) {
+    return NextResponse.json(
+      { error: "Only draft raffles can be deleted" },
+      { status: 400 },
+    );
+  }
+
+  await prisma.raffle.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

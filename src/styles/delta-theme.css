@@ -1227,6 +1227,23 @@
   gap: 10px !important;
 }
 
+.delta-admin-shell .al-admin-datetime-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px !important;
+  margin-bottom: 10px !important;
+}
+
+.delta-admin-shell .al-admin-datetime-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.delta-admin-shell .al-admin-datetime-col .al-admin-presets {
+  margin-top: 2px !important;
+}
+
 .delta-admin-shell .al-admin-table {
   width: 100% !important;
   border-collapse: collapse !important;
@@ -1249,6 +1266,12 @@
   display: flex !important;
   gap: 8px !important;
   flex-wrap: wrap !important;
+}
+
+.delta-admin-shell .al-admin-actions .al-admin-btn {
+  color: #000 !important;
+  text-decoration: none !important;
+  display: inline-block !important;
 }
 
 .delta-admin-shell .al-admin-error {

@@ -187,8 +187,8 @@ export default function RaffleDetailPage({
       chain: raffle.chain,
       entries: raffle.userEntry ? "1 PER WALLET" : "1 PER WALLET",
       spots:
-        raffle.spotCap != null
-          ? `${raffle.entryCount} / ${raffle.spotCap} FILLED`
+        raffle.type === "FCFS" && (raffle.winnerCount ?? raffle.spotCap) != null
+          ? `${raffle.entryCount} / ${raffle.winnerCount ?? raffle.spotCap} FILLED`
           : undefined,
       supply: "TBA",
       mintPrice: "TBA",

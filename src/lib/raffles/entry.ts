@@ -66,12 +66,15 @@ export async function submitEntry(input: {
     }
   }
 
-  if (raffle.type === RaffleType.FCFS && raffle.spotCap) {
-    const count = await prisma.raffleEntry.count({
-      where: { raffleId: raffle.id, status: { not: EntryStatus.CANCELLED } },
-    });
-    if (count >= raffle.spotCap && !existingWallet) {
-      throw new Error("All spots have been filled.");
+  if (raffle.type === RaffleType.FCFS) {
+    const cap = raffle.winnerCount ?? raffle.spotCap;
+    if (cap) {
+      const count = await prisma.raffleEntry.count({
+        where: { raffleId: raffle.id, status: { not: EntryStatus.CANCELLED } },
+      });
+      if (count >= cap && !existingWallet) {
+        throw new Error("All spots have been filled.");
+      }
     }
   }
 

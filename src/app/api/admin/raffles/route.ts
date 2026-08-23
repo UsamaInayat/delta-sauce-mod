@@ -38,12 +38,15 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const title = String(body.title ?? "").trim();
+  const type = (body.type as RaffleType) ?? RaffleType.LUCKY_DRAW;
+  const title =
+    type === RaffleType.ARTWORK_GIVEAWAY
+      ? String(body.itemName ?? body.title ?? "").trim()
+      : String(body.title ?? "").trim();
   if (!title) {
     return NextResponse.json({ error: "Title required" }, { status: 400 });
   }
 
-  const type = (body.type as RaffleType) ?? RaffleType.LUCKY_DRAW;
   let artworkImage = body.artworkImage as string | null;
   let itemName = body.itemName as string | null;
 
@@ -69,9 +72,10 @@ export async function POST(req: NextRequest) {
     data: {
       slug,
       title,
-      phase: body.phase ?? null,
-      artist: body.artist ?? null,
-      description: body.description ?? "",
+      phase: type === RaffleType.ARTWORK_GIVEAWAY ? null : (body.phase ?? null),
+      artist: type === RaffleType.ARTWORK_GIVEAWAY ? null : (body.artist ?? null),
+      description:
+        type === RaffleType.ARTWORK_GIVEAWAY ? "" : (body.description ?? ""),
       type,
       chain: body.chain ?? "ETHEREUM",
       startsAt: body.startsAt ? parseDateTimeLocalValue(body.startsAt) : null,

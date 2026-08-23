@@ -165,12 +165,13 @@ async function fetchCollectionHoldersSafe(collection: {
 
 export async function closeFcfsIfFull(raffleId: string) {
   const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
-  if (!raffle || raffle.type !== RaffleType.FCFS || !raffle.spotCap) return false;
+  const cap = raffle?.winnerCount ?? raffle?.spotCap;
+  if (!raffle || raffle.type !== RaffleType.FCFS || !cap) return false;
 
   const count = await prisma.raffleEntry.count({
     where: { raffleId, status: EntryStatus.SUBMITTED },
   });
-  if (count < raffle.spotCap) return false;
+  if (count < cap) return false;
 
   await finalizeRaffle(raffleId);
   return true;

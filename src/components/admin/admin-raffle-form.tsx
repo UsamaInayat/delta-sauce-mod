@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { TimePresetTag } from "@/components/admin/time-preset-tag";
-import {
-  formatCountdown,
-  toDateTimeLocalInputValue,
-} from "@/lib/datetime/local-input";
+import { toDateTimeLocalInputValue } from "@/lib/datetime/local-input";
 
 const RAFFLE_TYPES = [
   { value: "LUCKY_DRAW", label: "Lucky Draw" },
@@ -34,6 +31,10 @@ function addHours(base: Date, hours: number) {
   return new Date(base.getTime() + hours * 3600_000);
 }
 
+function addMinutes(base: Date, minutes: number) {
+  return new Date(base.getTime() + minutes * 60_000);
+}
+
 export default function AdminRaffleForm({
   raffleId,
 }: {
@@ -54,7 +55,6 @@ export default function AdminRaffleForm({
     startsAt: "",
     endsAt: "",
     winnerCount: "1",
-    spotCap: "",
     autoFinalize: true,
     tokenGated: false,
     collectionIds: [] as string[],
@@ -88,7 +88,6 @@ export default function AdminRaffleForm({
           startsAt: toDateTimeLocalInputValue(raffle.startsAt),
           endsAt: toDateTimeLocalInputValue(raffle.endsAt),
           winnerCount: String(raffle.winnerCount ?? 1),
-          spotCap: raffle.spotCap ? String(raffle.spotCap) : "",
           autoFinalize: raffle.autoFinalize !== false,
           tokenGated: Boolean(raffle.tokenGated),
           collectionIds: (raffle.collections ?? []).map(
@@ -101,11 +100,12 @@ export default function AdminRaffleForm({
       });
   }, [raffleId]);
 
-  const countdown = useMemo(() => {
-    if (!form.endsAt) return "24:00:00";
-    const end = new Date(form.endsAt);
-    return formatCountdown(end.getTime() - Date.now());
-  }, [form.endsAt]);
+  function setStartsFromPreset(minutes: number) {
+    setForm((f) => ({
+      ...f,
+      startsAt: toDateTimeLocalInputValue(addMinutes(new Date(), minutes)),
+    }));
+  }
 
   function setEndsFromPreset(hours: number) {
     const base = form.startsAt ? new Date(form.startsAt) : new Date();
@@ -113,6 +113,19 @@ export default function AdminRaffleForm({
       ...f,
       endsAt: toDateTimeLocalInputValue(addHours(base, hours)),
     }));
+  }
+
+  function buildPayload() {
+    if (form.type === "ARTWORK_GIVEAWAY") {
+      return {
+        ...form,
+        title: form.itemName.trim() || form.title.trim(),
+        phase: "",
+        artist: "",
+        description: "",
+      };
+    }
+    return form;
   }
 
   async function saveDraft() {
@@ -123,7 +136,7 @@ export default function AdminRaffleForm({
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(buildPayload()),
     });
     setSaving(false);
     const data = await res.json();
@@ -143,7 +156,7 @@ export default function AdminRaffleForm({
       const create = await fetch("/api/admin/raffles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(buildPayload()),
       });
       const created = await create.json();
       if (!create.ok) {
@@ -156,7 +169,7 @@ export default function AdminRaffleForm({
       await fetch(`/api/admin/raffles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(buildPayload()),
       });
     }
 
@@ -187,26 +200,20 @@ export default function AdminRaffleForm({
           {raffleId ? "Edit Raffle" : "Create Raffle"}
         </h1>
 
-        <div className="al-admin-field-row">
-          <label className="al-admin-label">
-            Raffle Type
-            <select
-              className="al-admin-input"
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-            >
-              {RAFFLE_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="al-admin-label">
-            Countdown Preview
-            <input className="al-admin-input mono" readOnly value={countdown} />
-          </label>
-        </div>
+        <label className="al-admin-label">
+          Raffle Type
+          <select
+            className="al-admin-input"
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value })}
+          >
+            {RAFFLE_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {isArtwork ? (
           <>
@@ -250,101 +257,102 @@ export default function AdminRaffleForm({
           </>
         ) : null}
 
-        <label className="al-admin-label">
-          Raffle Title
-          <input
-            className="al-admin-input"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-          />
-        </label>
+        {!isArtwork ? (
+          <>
+            <label className="al-admin-label">
+              Raffle Title
+              <input
+                className="al-admin-input"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
+            </label>
 
-        <div className="al-admin-field-row">
-          <label className="al-admin-label">
-            Phase
-            <input
-              className="al-admin-input"
-              value={form.phase}
-              onChange={(e) => setForm({ ...form, phase: e.target.value })}
-            />
-          </label>
-          <label className="al-admin-label">
-            Chain
-            <select
-              className="al-admin-input"
-              value={form.chain}
-              onChange={(e) => setForm({ ...form, chain: e.target.value })}
-            >
-              {CHAINS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+            <div className="al-admin-field-row">
+              <label className="al-admin-label">
+                Phase
+                <input
+                  className="al-admin-input"
+                  value={form.phase}
+                  onChange={(e) => setForm({ ...form, phase: e.target.value })}
+                />
+              </label>
+              <label className="al-admin-label">
+                Chain
+                <select
+                  className="al-admin-input"
+                  value={form.chain}
+                  onChange={(e) => setForm({ ...form, chain: e.target.value })}
+                >
+                  {CHAINS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-        <label className="al-admin-label">
-          Artist
-          <input
-            className="al-admin-input"
-            value={form.artist}
-            onChange={(e) => setForm({ ...form, artist: e.target.value })}
-          />
-        </label>
+            <label className="al-admin-label">
+              Artist
+              <input
+                className="al-admin-input"
+                value={form.artist}
+                onChange={(e) => setForm({ ...form, artist: e.target.value })}
+              />
+            </label>
 
-        <label className="al-admin-label">
-          Description
-          <textarea
-            className="al-admin-textarea"
-            rows={6}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Supports **bold** and *italic* markers"
-          />
-        </label>
-
-        <div className="al-admin-field-row">
-          <label className="al-admin-label">
-            Starts at
-            <input
-              className="al-admin-input"
-              type="datetime-local"
-              value={form.startsAt}
-              onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-            />
-          </label>
-          <label className="al-admin-label">
-            Ends at
-            <input
-              className="al-admin-input"
-              type="datetime-local"
-              value={form.endsAt}
-              onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
-            />
-          </label>
-        </div>
-
-        <div className="al-admin-presets">
-          <TimePresetTag label="6h" onClick={() => setEndsFromPreset(6)} />
-          <TimePresetTag label="12h" onClick={() => setEndsFromPreset(12)} />
-          <TimePresetTag label="24h" onClick={() => setEndsFromPreset(24)} />
-          <TimePresetTag label="48h" onClick={() => setEndsFromPreset(48)} />
-          <TimePresetTag label="72h" onClick={() => setEndsFromPreset(72)} />
-        </div>
-
-        {form.type === "FCFS" ? (
-          <label className="al-admin-label">
-            Spot cap
-            <input
-              className="al-admin-input"
-              type="number"
-              min={1}
-              value={form.spotCap}
-              onChange={(e) => setForm({ ...form, spotCap: e.target.value })}
-            />
-          </label>
+            <label className="al-admin-label">
+              Description
+              <textarea
+                className="al-admin-textarea"
+                rows={6}
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                placeholder="Supports **bold** and *italic* markers"
+              />
+            </label>
+          </>
         ) : null}
+
+        <div className="al-admin-datetime-row">
+          <div className="al-admin-datetime-col">
+            <label className="al-admin-label">
+              Starts at
+              <input
+                className="al-admin-input"
+                type="datetime-local"
+                value={form.startsAt}
+                onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+              />
+            </label>
+            <div className="al-admin-presets">
+              <TimePresetTag label="3m" onClick={() => setStartsFromPreset(3)} />
+              <TimePresetTag label="5m" onClick={() => setStartsFromPreset(5)} />
+              <TimePresetTag label="10m" onClick={() => setStartsFromPreset(10)} />
+            </div>
+          </div>
+          <div className="al-admin-datetime-col">
+            <label className="al-admin-label">
+              Ends at
+              <input
+                className="al-admin-input"
+                type="datetime-local"
+                value={form.endsAt}
+                onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+              />
+            </label>
+            <div className="al-admin-presets">
+              <TimePresetTag label="6h" onClick={() => setEndsFromPreset(6)} />
+              <TimePresetTag label="12h" onClick={() => setEndsFromPreset(12)} />
+              <TimePresetTag label="24h" onClick={() => setEndsFromPreset(24)} />
+              <TimePresetTag label="48h" onClick={() => setEndsFromPreset(48)} />
+              <TimePresetTag label="72h" onClick={() => setEndsFromPreset(72)} />
+            </div>
+          </div>
+        </div>
 
         {!isArtwork && form.type !== "WALLET_COLLECTION" ? (
           <label className="al-admin-label">

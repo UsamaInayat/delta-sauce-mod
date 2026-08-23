@@ -61,8 +61,12 @@ export function DeltaAdminShell({ children, pageTitle = "Admin" }: DeltaAdminShe
         <ul className="al-admin-tabs">
           {ADMIN_TABS.map((tab) => {
             const active =
-              pathname === tab.href ||
-              (tab.href !== "/admin/raffles/new" && pathname.startsWith(tab.href));
+              tab.href === "/admin/raffles/new"
+                ? pathname === "/admin/raffles/new"
+                : tab.href === "/admin/raffles"
+                  ? pathname === "/admin/raffles" ||
+                    /^\/admin\/raffles\/[^/]+\/edit$/.test(pathname)
+                  : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
 
             return (
               <li key={tab.href}>
