@@ -5,9 +5,6 @@ export async function register() {
     return;
   }
 
-  const { startRaffleScheduler } = await import(
-    /* webpackIgnore: true */
-    "./lib/raffles/scheduler"
-  );
+  const { startRaffleScheduler } = await import("@/lib/raffles/scheduler");
   startRaffleScheduler();
 }

@@ -1,4 +1,3 @@
-import { randomInt } from "crypto";
 import {
   EntryStatus,
   RaffleStatus,
@@ -19,7 +18,7 @@ export function weightedRandomDraw(
   while (winnerIds.length < needed && pool.length > 0) {
     const totalWeight = pool.reduce((sum, e) => sum + e.weight, 0);
     if (totalWeight <= 0) break;
-    let roll = randomInt(totalWeight);
+    let roll = Math.floor(Math.random() * totalWeight);
     let picked = pool[0];
     for (const entry of pool) {
       roll -= entry.weight;
