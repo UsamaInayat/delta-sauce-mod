@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 
 type SavedRaffle = {
@@ -52,20 +53,23 @@ export default function SavedRafflesPage() {
 
   return (
     <DeltaAdminShell pageTitle="Saved Raffles">
-      <div className="al-admin-panel">
+      <DeltaAdminWindow title="SAVED_RAFFLES.EXE" wide>
         <div className="al-admin-toolbar">
-          <h1 className="al-admin-title">Saved Raffles</h1>
+          <h1 className="arena-form-title">Saved Raffles</h1>
           <button type="button" className="al-admin-btn" onClick={logout}>
             Logout
           </button>
         </div>
 
         {loading ? (
-          <p>Loading…</p>
+          <p className="al-empty-copy">Loading…</p>
         ) : raffles.length === 0 ? (
-          <p>No raffles yet. <Link href="/admin/raffles/new">Create one</Link>.</p>
+          <p className="al-empty-copy">
+            No raffles yet. <Link href="/admin/raffles/new">Create one</Link>.
+          </p>
         ) : (
-          <table className="al-admin-table">
+          <div className="al-admin-table-wrap">
+            <table className="al-admin-table">
             <thead>
               <tr>
                 <th>Title</th>
@@ -107,9 +111,10 @@ export default function SavedRafflesPage() {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
-      </div>
+      </DeltaAdminWindow>
     </DeltaAdminShell>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { TimePresetTag } from "@/components/admin/time-preset-tag";
 import {
   formatCountdown,
@@ -178,8 +179,11 @@ export default function AdminRaffleForm({
 
   return (
     <DeltaAdminShell pageTitle={raffleId ? "Edit Raffle" : "Create Raffle"}>
-      <div className="al-admin-panel al-admin-form-wide">
-        <h1 className="al-admin-title">
+      <DeltaAdminWindow
+        title={raffleId ? "EDIT_RAFFLE.EXE" : "CREATE_RAFFLE.EXE"}
+        wide
+      >
+        <h1 className="arena-form-title">
           {raffleId ? "Edit Raffle" : "Create Raffle"}
         </h1>
 
@@ -436,7 +440,7 @@ export default function AdminRaffleForm({
             Publish
           </button>
         </div>
-      </div>
+      </DeltaAdminWindow>
     </DeltaAdminShell>
   );
 }

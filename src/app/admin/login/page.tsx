@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
+import { DeltaButton, DeltaButtonRow } from "@/components/delta/delta-buttons";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -32,34 +34,58 @@ export default function AdminLoginPage() {
 
   return (
     <DeltaAdminShell pageTitle="Login">
-      <div className="al-admin-panel">
-        <h1 className="al-admin-title">Admin Login</h1>
+      <DeltaAdminWindow title="ADMIN.EXE — Sign In">
         <form onSubmit={handleSubmit} className="al-admin-form">
-          <label className="al-admin-label">
-            Username
-            <input
-              className="al-admin-input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-            />
-          </label>
-          <label className="al-admin-label">
-            Password
-            <input
-              className="al-admin-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </label>
-          {error ? <p className="al-admin-error">{error}</p> : null}
-          <button className="al-admin-btn primary" type="submit" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In"}
-          </button>
+          <h1 className="arena-form-title">Admin Login</h1>
+          <p className="arena-form-sub">Delta Sauce raffle control panel</p>
+
+          <div className="al-group">
+            <span className="al-group-legend">Credentials</span>
+            <div className="arena-field">
+              <label className="arena-field-label" htmlFor="admin-user">
+                Username
+              </label>
+              <div className="arena-input-wrap">
+                <input
+                  id="admin-user"
+                  className="arena-input"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
+              </div>
+            </div>
+            <div className="arena-field">
+              <label className="arena-field-label" htmlFor="admin-pass">
+                Password
+              </label>
+              <div className="arena-input-wrap">
+                <input
+                  id="admin-pass"
+                  className="arena-input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="arena-result show err">
+              <span className="al-msgicon" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <DeltaButtonRow>
+            <DeltaButton variant="primary" type="submit" disabled={loading}>
+              {loading ? "Signing in…" : "Sign In"}
+            </DeltaButton>
+          </DeltaButtonRow>
         </form>
-      </div>
+      </DeltaAdminWindow>
     </DeltaAdminShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 
 type WinnerRow = {
   id: string;
@@ -45,51 +46,53 @@ export default function WinnersPage() {
 
   return (
     <DeltaAdminShell pageTitle="Winners">
-      <div className="al-admin-panel">
+      <DeltaAdminWindow title="WINNERS.EXE" wide>
         <div className="al-admin-toolbar">
-          <h1 className="al-admin-title">Winners</h1>
+          <h1 className="arena-form-title">Winners</h1>
           <button type="button" className="al-admin-btn" onClick={exportCsv}>
             Export CSV
           </button>
         </div>
 
         {rows.length === 0 ? (
-          <p>No finalized raffles yet.</p>
+          <p className="al-empty-copy">No finalized raffles yet.</p>
         ) : (
-          <table className="al-admin-table">
-            <thead>
-              <tr>
-                <th>Raffle</th>
-                <th>Type</th>
-                <th>Closed</th>
-                <th>Winners</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.title}</td>
-                  <td>{row.type.replace(/_/g, " ")}</td>
-                  <td>
-                    {row.closedAt
-                      ? new Date(row.closedAt).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td>
-                    <ul className="al-admin-winner-list">
-                      {row.winners.map((w) => (
-                        <li key={w.walletAddress}>
-                          {w.walletEns ?? w.walletAddress} (@{w.xHandle})
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
+          <div className="al-admin-table-wrap">
+            <table className="al-admin-table">
+              <thead>
+                <tr>
+                  <th>Raffle</th>
+                  <th>Type</th>
+                  <th>Closed</th>
+                  <th>Winners</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.title}</td>
+                    <td>{row.type.replace(/_/g, " ")}</td>
+                    <td>
+                      {row.closedAt
+                        ? new Date(row.closedAt).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td>
+                      <ul className="al-admin-winner-list">
+                        {row.winners.map((w) => (
+                          <li key={w.walletAddress}>
+                            {w.walletEns ?? w.walletAddress} (@{w.xHandle})
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </DeltaAdminWindow>
     </DeltaAdminShell>
   );
 }

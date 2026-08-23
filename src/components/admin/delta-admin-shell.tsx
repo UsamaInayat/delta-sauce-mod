@@ -92,8 +92,8 @@ export function DeltaAdminShell({ children, pageTitle = "Admin" }: DeltaAdminShe
             <div className="al-screen-frame">
               <div className="al-screen">
                 <div className="al-desktop">
-                  <div className="al-windows al-windows-single">
-                    <div className="al-admin-content">{children}</div>
+                  <div className="al-windows al-windows-single al-admin-stage">
+                    {children}
                   </div>
                 </div>
                 <div className="al-taskbar">

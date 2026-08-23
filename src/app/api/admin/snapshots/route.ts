@@ -71,5 +71,9 @@ export async function POST(req: NextRequest) {
       takenAt: snapshot.takenAt,
       holderCount: holders.length,
     },
+    warning:
+      holders.length === 0
+        ? `No holders found for ${collection.name}. Check the contract address (${collection.contractAddress}) and chain (${collection.chain}).`
+        : undefined,
   });
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
+import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 
 type Collection = {
   id: string;
@@ -39,6 +40,7 @@ export default function SnapshotsPage() {
     chain: "ETHEREUM",
   });
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function reload() {
     const [cols, snaps] = await Promise.all([
@@ -71,25 +73,34 @@ export default function SnapshotsPage() {
 
   async function takeSnapshot() {
     if (!selectedId) return;
-    setMessage("Taking snapshot…");
+    setBusy(true);
+    setMessage("Fetching holders from chain… (may take a minute)");
     const res = await fetch("/api/admin/snapshots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ collectionId: selectedId }),
     });
     const data = await res.json();
+    setBusy(false);
     if (!res.ok) {
       setMessage(data.error ?? "Snapshot failed");
       return;
     }
-    setMessage(`Snapshot saved (${data.snapshot.holderCount} holders).`);
+    if (data.warning) {
+      setMessage(data.warning);
+    } else {
+      setMessage(`Snapshot saved — ${data.snapshot.holderCount} holders found.`);
+    }
     await reload();
   }
 
   return (
     <DeltaAdminShell pageTitle="Snapshots">
-      <div className="al-admin-panel">
-        <h1 className="al-admin-title">Snapshots</h1>
+      <DeltaAdminWindow title="SNAPSHOTS.EXE" wide>
+        <h1 className="arena-form-title">Collection Snapshots</h1>
+        <p className="arena-form-sub">
+          Add a contract, then pull live holder wallets from OpenSea.
+        </p>
 
         <section className="al-admin-section">
           <h2>Add Collection</h2>
@@ -115,6 +126,7 @@ export default function SnapshotsPage() {
                     contractAddress: e.target.value,
                   })
                 }
+                placeholder="0x…"
               />
             </label>
             <label className="al-admin-label">
@@ -152,45 +164,60 @@ export default function SnapshotsPage() {
                 <option value="">Select…</option>
                 {collections.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.name} ({c.chain})
                   </option>
                 ))}
               </select>
             </label>
-            <button type="button" className="al-admin-btn" onClick={takeSnapshot}>
-              Take Snapshot
+            <button
+              type="button"
+              className="al-admin-btn"
+              onClick={takeSnapshot}
+              disabled={busy || !selectedId}
+            >
+              {busy ? "Working…" : "Take Snapshot"}
             </button>
           </div>
         </section>
 
         <section className="al-admin-section">
           <h2>Recent Snapshots</h2>
-          <table className="al-admin-table">
-            <thead>
-              <tr>
-                <th>Collection</th>
-                <th>Taken</th>
-                <th>Holders</th>
-                <th>CSV</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshots.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.collection.name}</td>
-                  <td>{new Date(s.takenAt).toLocaleString()}</td>
-                  <td>{s._count?.holders ?? s.holderCount ?? 0}</td>
-                  <td>
-                    <a href={`/api/admin/snapshots/${s.id}/csv`}>Download</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {snapshots.length === 0 ? (
+            <p className="al-empty-copy">No snapshots yet.</p>
+          ) : (
+            <div className="al-admin-table-wrap">
+              <table className="al-admin-table">
+                <thead>
+                  <tr>
+                    <th>Collection</th>
+                    <th>Taken</th>
+                    <th>Holders</th>
+                    <th>CSV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {snapshots.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.collection.name}</td>
+                      <td>{new Date(s.takenAt).toLocaleString()}</td>
+                      <td>{s._count?.holders ?? s.holderCount ?? 0}</td>
+                      <td>
+                        <a href={`/api/admin/snapshots/${s.id}/csv`}>Download</a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
-        {message ? <p className="al-admin-msg">{message}</p> : null}
-      </div>
+        {message ? (
+          <p className={`al-admin-msg${message.includes("0 holder") ? " al-admin-warn" : ""}`}>
+            {message}
+          </p>
+        ) : null}
+      </DeltaAdminWindow>
     </DeltaAdminShell>
   );
 }

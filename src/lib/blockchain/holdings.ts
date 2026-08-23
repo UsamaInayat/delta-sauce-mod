@@ -22,6 +22,19 @@ function chainPath(chain: RaffleChain) {
   }
 }
 
+async function proxyFetch<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function walletHoldsFromCollection(input: {
   wallet: string;
   contractAddress: string;
@@ -32,18 +45,12 @@ export async function walletHoldsFromCollection(input: {
   const chain = chainPath(input.chain);
 
   const url = `${PROXY}/chain/${chain}/account/${wallet}/nfts?limit=50`;
-  try {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) return false;
-    const data = (await res.json()) as {
-      nfts?: Array<{ contract?: string }>;
-    };
-    return (data.nfts ?? []).some(
-      (n) => (n.contract ?? "").toLowerCase() === contract,
-    );
-  } catch {
-    return false;
-  }
+  const data = await proxyFetch<{ nfts?: Array<{ contract?: string }> }>(url);
+  if (!data) return false;
+
+  return (data.nfts ?? []).some(
+    (n) => (n.contract ?? "").toLowerCase() === contract,
+  );
 }
 
 export async function walletHoldsAnyCollection(
@@ -63,6 +70,36 @@ export async function walletHoldsAnyCollection(
   return { holds: false };
 }
 
+type NftListItem = { identifier?: string };
+type OwnerRow = { address?: string; quantity?: number };
+
+async function fetchNftOwners(input: {
+  chain: string;
+  contract: string;
+  identifier: string;
+}): Promise<OwnerRow[]> {
+  const url = `${PROXY}/chain/${input.chain}/contract/${input.contract}/nfts/${encodeURIComponent(input.identifier)}/owners`;
+  const data = await proxyFetch<{ owners?: OwnerRow[] }>(url);
+  return data?.owners ?? [];
+}
+
+async function mapPool<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+) {
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      await fn(items[i]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length || 1) }, worker),
+  );
+}
+
 export async function fetchCollectionHolders(input: {
   contractAddress: string;
   chain: RaffleChain;
@@ -70,42 +107,57 @@ export async function fetchCollectionHolders(input: {
 }): Promise<Array<{ walletAddress: string; balance: number }>> {
   const chain = chainPath(input.chain);
   const contract = input.contractAddress.toLowerCase();
-  const limit = input.limit ?? 500;
+  const maxTokens = input.limit ?? 500;
   const holders = new Map<string, number>();
 
   let cursor: string | null = null;
   let pages = 0;
+  let tokensProcessed = 0;
 
-  while (pages < 20 && holders.size < limit) {
+  while (pages < 40 && tokensProcessed < maxTokens) {
     const qs = new URLSearchParams({ limit: "50" });
     if (cursor) qs.set("next", cursor);
-    const url = `${PROXY}/chain/${chain}/contract/${contract}/nfts?${qs}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) break;
-    const data = (await res.json()) as {
-      nfts?: Array<{ owners?: Array<{ address?: string }> }>;
+
+    const listUrl = `${PROXY}/chain/${chain}/contract/${contract}/nfts?${qs}`;
+    const data = await proxyFetch<{
+      nfts?: NftListItem[];
       next?: string;
-    };
-    for (const nft of data.nfts ?? []) {
-      for (const owner of nft.owners ?? []) {
+    }>(listUrl);
+
+    if (!data?.nfts?.length) break;
+
+    const batch = data.nfts.slice(0, maxTokens - tokensProcessed);
+    tokensProcessed += batch.length;
+
+    await mapPool(batch, 8, async (nft) => {
+      if (!nft.identifier) return;
+      const owners = await fetchNftOwners({
+        chain,
+        contract,
+        identifier: nft.identifier,
+      });
+      for (const owner of owners) {
         if (!owner.address) continue;
         const w = normalizeWallet(owner.address);
-        holders.set(w, (holders.get(w) ?? 0) + 1);
+        const qty = Math.max(1, owner.quantity ?? 1);
+        holders.set(w, (holders.get(w) ?? 0) + qty);
       }
-    }
+    });
+
     cursor = data.next ?? null;
     pages += 1;
     if (!cursor) break;
   }
 
-  return Array.from(holders.entries()).map(([walletAddress, balance]) => ({
-    walletAddress,
-    balance,
-  }));
+  return Array.from(holders.entries())
+    .map(([walletAddress, balance]) => ({ walletAddress, balance }))
+    .sort((a, b) => b.balance - a.balance);
 }
 
 export async function fetchOpenseaNft(url: string) {
-  const m = url.match(/opensea\.io\/(?:assets|item)\/([^/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)/i);
+  const m = url.match(
+    /opensea\.io\/(?:assets|item)\/([^/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)/i,
+  );
   if (!m) throw new Error("Invalid OpenSea URL");
   const [, chain, contract, tokenId] = m;
   const res = await fetch(
@@ -125,10 +177,7 @@ export async function fetchOpenseaNft(url: string) {
   if (!nft) throw new Error("NFT not found");
   return {
     name: nft.name ?? "Untitled",
-    image:
-      nft.display_image_url ??
-      nft.image_url ??
-      null,
+    image: nft.display_image_url ?? nft.image_url ?? null,
     collection: nft.collection ?? "",
   };
 }
