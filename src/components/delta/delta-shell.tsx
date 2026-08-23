@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { RafaelBranding } from "@/components/delta/rafael-branding";
 
 export type DeltaBreadcrumb = {
   label: string;
@@ -89,6 +90,7 @@ export function DeltaShell({
                     Start
                   </div>
                   <div className="al-task">{taskLabel}</div>
+                  <RafaelBranding />
                   <LiveClock />
                 </div>
                 <div className="al-crt" aria-hidden="true" />

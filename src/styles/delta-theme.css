@@ -896,6 +896,54 @@
   color: #000 !important;
 }
 
+.arena-portfolio-wrapper .al-task,
+.delta-admin-shell .al-task {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  padding: 2px 10px !important;
+  border: 1px solid !important;
+  border-color: #808080 #fff #fff #808080 !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.arena-portfolio-wrapper .al-rafael-brand,
+.delta-admin-shell .al-rafael-brand {
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 1px 6px 2px !important;
+  opacity: 0.78 !important;
+  border: 1px solid !important;
+  border-color: #808080 #fff #fff #808080 !important;
+  background: linear-gradient(180deg, #ece9d8 0%, #d4d0c8 100%) !important;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.65) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.arena-portfolio-wrapper .al-rafael-logo,
+.delta-admin-shell .al-rafael-logo {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 1px !important;
+  image-rendering: auto !important;
+}
+
+.arena-portfolio-wrapper .al-rafael-text,
+.delta-admin-shell .al-rafael-text {
+  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px !important;
+  color: #2a2520 !important;
+  white-space: nowrap !important;
+}
+
 .arena-portfolio-wrapper .al-start,
 .delta-admin-shell .al-start {
   display: flex !important;
@@ -918,23 +966,12 @@
   background: conic-gradient(from 90deg at 50% 50%, #ff0000 0 25%, #00a800 0 50%, #0000ff 0 75%, #ffcc00 0) !important;
 }
 
-.arena-portfolio-wrapper .al-task,
-.delta-admin-shell .al-task {
-  padding: 2px 10px !important;
-  border: 1px solid !important;
-  border-color: #808080 #fff #fff #808080 !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
 .arena-portfolio-wrapper .al-clock,
 .delta-admin-shell .al-clock {
-  margin-left: auto !important;
   padding: 2px 10px !important;
   border: 1px solid !important;
   border-color: #808080 #fff #fff #808080 !important;
+  flex-shrink: 0 !important;
 }
 
 /* raffle cards horizontal scroll */

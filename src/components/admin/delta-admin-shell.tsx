@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { RafaelBranding } from "@/components/delta/rafael-branding";
 
 const ADMIN_TABS = [
   { label: "Create Raffle", href: "/admin/raffles/new" },
@@ -106,6 +107,7 @@ export function DeltaAdminShell({ children, pageTitle = "Admin" }: DeltaAdminShe
                     Start
                   </div>
                   <div className="al-task">ADMIN.EXE</div>
+                  <RafaelBranding />
                   <LiveClock />
                 </div>
                 <div className="al-crt" aria-hidden="true" />
