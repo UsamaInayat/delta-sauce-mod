@@ -1578,6 +1578,146 @@
   margin: 0 !important;
 }
 
+/* raffles desktop — Win95 wallpaper + folder icons */
+.arena-portfolio-wrapper .al-raffle-desktop {
+  position: relative !important;
+  flex: 1 1 auto !important;
+  min-height: 440px !important;
+  padding: 18px 16px 40px !important;
+  background-color: #008080 !important;
+  background-image:
+    radial-gradient(ellipse 120px 48px at 18% 22%, rgba(255, 255, 255, 0.22), transparent 70%),
+    radial-gradient(ellipse 90px 36px at 72% 18%, rgba(255, 255, 255, 0.18), transparent 72%),
+    radial-gradient(ellipse 140px 52px at 55% 68%, rgba(255, 255, 255, 0.14), transparent 74%),
+    radial-gradient(ellipse 70px 28px at 88% 78%, rgba(255, 255, 255, 0.16), transparent 70%),
+    linear-gradient(180deg, #008080 0%, #007070 100%) !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folders {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-content: flex-start !important;
+  gap: 22px 28px !important;
+  padding: 4px 6px !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 88px !important;
+  padding: 6px 4px 8px !important;
+  text-decoration: none !important;
+  color: #fff !important;
+  border: 1px dotted transparent !important;
+  border-radius: 0 !important;
+  transition: filter 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder:hover,
+.arena-portfolio-wrapper .al-raffle-folder:focus-visible {
+  background: rgba(0, 0, 128, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  outline: none !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-icon {
+  display: block !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin-bottom: 6px !important;
+  background:
+    linear-gradient(180deg, #ffe566 0 38%, #ffb300 38% 100%) !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 2px 2px 2px !important;
+  position: relative !important;
+  image-rendering: pixelated !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-icon::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -4px !important;
+  left: 2px !important;
+  width: 14px !important;
+  height: 6px !important;
+  background: #ffe566 !important;
+  border: 1px solid #000 !important;
+  border-bottom: none !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-label {
+  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  text-shadow: 1px 1px 0 #000 !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-live .al-raffle-folder-icon {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-lost {
+  filter: grayscale(1) !important;
+  opacity: 0.82 !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-lost .al-raffle-folder-icon {
+  filter: grayscale(1) contrast(0.85) !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-lost .al-raffle-folder-label {
+  color: #e8e8e8 !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-icon {
+  background:
+    linear-gradient(180deg, #8dff8d 0 38%, #22c022 38% 100%) !important;
+  border-color: #004400 !important;
+  box-shadow:
+    0 0 10px rgba(55, 214, 88, 0.95),
+    0 0 22px rgba(55, 214, 88, 0.65),
+    0 0 36px rgba(55, 214, 88, 0.35) !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-icon::before {
+  background: #8dff8d !important;
+  border-color: #004400 !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-label {
+  color: #c8ffc8 !important;
+  text-shadow:
+    0 0 6px rgba(55, 214, 88, 0.9),
+    1px 1px 0 #003300 !important;
+}
+
+.arena-portfolio-wrapper .al-raffle-folder-won:hover {
+  background: rgba(0, 80, 0, 0.35) !important;
+}
+
+.arena-portfolio-wrapper .al-desktop-empty {
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000 !important;
+  padding: 24px !important;
+}
+
+.arena-portfolio-wrapper .al-desktop-back {
+  position: absolute !important;
+  left: 16px !important;
+  bottom: 12px !important;
+  margin: 0 !important;
+}
+
+.arena-portfolio-wrapper .al-desktop-back a {
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+
 .delta-admin-shell .al-admin-panel {
   background: transparent !important;
   border: none !important;

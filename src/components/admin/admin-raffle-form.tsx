@@ -198,7 +198,7 @@ export default function AdminRaffleForm({
     try {
       if (raffleId) {
         await persistRaffle(raffleId);
-        setMessage("Saved.");
+        router.push("/admin/raffles");
       } else {
         const res = await fetch("/api/admin/raffles", {
           method: "POST",
