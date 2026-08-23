@@ -31,6 +31,14 @@ export function isRaffleEnterable(
   return getRaffleLifecycleLabel(raffle, now) === "LIVE";
 }
 
+export function isRafflePubliclyVisible(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+) {
+  const label = getRaffleLifecycleLabel(raffle, now);
+  return label === "LIVE" || label === "ENDED" || label === "FINALIZED";
+}
+
 export function isRaffleLockedFromEdits(
   raffle: RaffleLifecycleInput,
   now: Date = new Date(),

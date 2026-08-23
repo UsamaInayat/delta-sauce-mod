@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { TimePresetTag } from "@/components/admin/time-preset-tag";
-import { toDateTimeLocalInputValue } from "@/lib/datetime/local-input";
+import { toDateTimeLocalInputValue, parseDateTimeLocalValue } from "@/lib/datetime/local-input";
 
 const RAFFLE_TYPES = [
   { value: "LUCKY_DRAW", label: "Lucky Draw" },
@@ -27,6 +27,46 @@ const CHAINS = [
 
 type Collection = { id: string; name: string };
 
+type LoadedRaffle = {
+  id: string;
+  title: string;
+  phase: string | null;
+  artist: string | null;
+  description: string;
+  type: string;
+  status: string;
+  chain: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  winnerCount: number | null;
+  autoFinalize: boolean;
+  tokenGated: boolean;
+  collections: Array<{ collectionId: string }>;
+  itemName: string | null;
+  openseaUrl: string | null;
+  artworkCollection: string | null;
+};
+
+function raffleToForm(raffle: LoadedRaffle) {
+  return {
+    title: raffle.title ?? "",
+    phase: raffle.phase ?? "",
+    artist: raffle.artist ?? "",
+    description: raffle.description ?? "",
+    type: raffle.type ?? "LUCKY_DRAW",
+    chain: raffle.chain ?? "ETHEREUM",
+    startsAt: toDateTimeLocalInputValue(raffle.startsAt),
+    endsAt: toDateTimeLocalInputValue(raffle.endsAt),
+    winnerCount: String(raffle.winnerCount ?? 1),
+    autoFinalize: raffle.autoFinalize !== false,
+    tokenGated: Boolean(raffle.tokenGated),
+    collectionIds: (raffle.collections ?? []).map((c) => c.collectionId),
+    itemName: raffle.itemName ?? "",
+    openseaUrl: raffle.openseaUrl ?? "",
+    artworkCollection: raffle.artworkCollection ?? "",
+  };
+}
+
 function addHours(base: Date, hours: number) {
   return new Date(base.getTime() + hours * 3600_000);
 }
@@ -44,6 +84,7 @@ export default function AdminRaffleForm({
   const [collections, setCollections] = useState<Collection[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [raffleStatus, setRaffleStatus] = useState<string>("DRAFT");
 
   const [form, setForm] = useState({
     title: "",
@@ -71,32 +112,13 @@ export default function AdminRaffleForm({
 
   useEffect(() => {
     if (!raffleId) return;
-    void fetch("/api/admin/raffles")
+    void fetch(`/api/admin/raffles/${raffleId}`)
       .then((r) => r.json())
       .then((d) => {
-        const raffle = (d.raffles ?? []).find(
-          (r: { id: string }) => r.id === raffleId,
-        );
+        const raffle = d.raffle as LoadedRaffle | undefined;
         if (!raffle) return;
-        setForm({
-          title: raffle.title ?? "",
-          phase: raffle.phase ?? "",
-          artist: raffle.artist ?? "",
-          description: raffle.description ?? "",
-          type: raffle.type ?? "LUCKY_DRAW",
-          chain: raffle.chain ?? "ETHEREUM",
-          startsAt: toDateTimeLocalInputValue(raffle.startsAt),
-          endsAt: toDateTimeLocalInputValue(raffle.endsAt),
-          winnerCount: String(raffle.winnerCount ?? 1),
-          autoFinalize: raffle.autoFinalize !== false,
-          tokenGated: Boolean(raffle.tokenGated),
-          collectionIds: (raffle.collections ?? []).map(
-            (c: { collectionId: string }) => c.collectionId,
-          ),
-          itemName: raffle.itemName ?? "",
-          openseaUrl: raffle.openseaUrl ?? "",
-          artworkCollection: raffle.artworkCollection ?? "",
-        });
+        setRaffleStatus(raffle.status ?? "DRAFT");
+        setForm(raffleToForm(raffle));
       });
   }, [raffleId]);
 
@@ -108,11 +130,29 @@ export default function AdminRaffleForm({
   }
 
   function setEndsFromPreset(hours: number) {
-    const base = form.startsAt ? new Date(form.startsAt) : new Date();
+    const base = form.startsAt
+      ? (parseDateTimeLocalValue(form.startsAt) ?? new Date())
+      : new Date();
     setForm((f) => ({
       ...f,
       endsAt: toDateTimeLocalInputValue(addHours(base, hours)),
     }));
+  }
+
+  async function persistRaffle(id: string) {
+    const res = await fetch(`/api/admin/raffles/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPayload()),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error ?? "Save failed");
+    }
+    const raffle = data.raffle as LoadedRaffle;
+    setRaffleStatus(raffle.status ?? "DRAFT");
+    setForm(raffleToForm(raffle));
+    return raffle;
   }
 
   function buildPayload() {
@@ -128,64 +168,81 @@ export default function AdminRaffleForm({
     return form;
   }
 
-  async function saveDraft() {
-    setSaving(true);
-    setMessage("");
-    const url = raffleId ? `/api/admin/raffles/${raffleId}` : "/api/admin/raffles";
-    const method = raffleId ? "PATCH" : "POST";
-    const res = await fetch(url, {
-      method,
+  async function ensureRaffleId(): Promise<string> {
+    if (raffleId) {
+      await persistRaffle(raffleId);
+      return raffleId;
+    }
+    const res = await fetch("/api/admin/raffles", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(buildPayload()),
     });
-    setSaving(false);
     const data = await res.json();
     if (!res.ok) {
-      setMessage(data.error ?? "Save failed");
-      return;
+      throw new Error(data.error ?? "Save failed");
     }
-    setMessage("Draft saved.");
-    if (!raffleId) router.push(`/admin/raffles/${data.raffle.id}/edit`);
+    const id = data.raffle.id as string;
+    router.replace(`/admin/raffles/${id}/edit`);
+    return id;
   }
 
-  async function publish() {
+  async function save() {
     setSaving(true);
     setMessage("");
-    let id = raffleId;
-    if (!id) {
-      const create = await fetch("/api/admin/raffles", {
+    try {
+      if (raffleId) {
+        await persistRaffle(raffleId);
+        setMessage("Saved.");
+      } else {
+        const res = await fetch("/api/admin/raffles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload()),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage(data.error ?? "Save failed");
+          return;
+        }
+        setMessage("Saved.");
+        router.push(`/admin/raffles/${data.raffle.id}/edit`);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function publishRaffle() {
+    setSaving(true);
+    setMessage("");
+    try {
+      const id = await ensureRaffleId();
+
+      const res = await fetch(`/api/admin/raffles/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify({ action: "publish" }),
       });
-      const created = await create.json();
-      if (!create.ok) {
-        setSaving(false);
-        setMessage(created.error ?? "Create failed");
+      if (!res.ok) {
+        const data = await res.json();
+        setMessage(data.error ?? "Publish failed");
         return;
       }
-      id = created.raffle.id;
-    } else {
-      await fetch(`/api/admin/raffles/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
-      });
-    }
 
-    const res = await fetch(`/api/admin/raffles/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "publish" }),
-    });
-    setSaving(false);
-    if (!res.ok) {
       const data = await res.json();
-      setMessage(data.error ?? "Publish failed");
-      return;
+      const raffle = data.raffle as LoadedRaffle;
+      setRaffleStatus(raffle.status ?? "PUBLISHED");
+      setForm(raffleToForm(raffle));
+      setMessage("Published.");
+      router.push("/admin/raffles");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Publish failed");
+    } finally {
+      setSaving(false);
     }
-    setMessage("Published.");
-    router.push("/admin/raffles");
   }
 
   const isArtwork = form.type === "ARTWORK_GIVEAWAY";
@@ -435,15 +492,15 @@ export default function AdminRaffleForm({
             type="button"
             className="al-admin-btn"
             disabled={saving}
-            onClick={saveDraft}
+            onClick={save}
           >
-            Save Draft
+            Save
           </button>
           <button
             type="button"
             className="al-admin-btn primary"
             disabled={saving}
-            onClick={publish}
+            onClick={publishRaffle}
           >
             Publish
           </button>

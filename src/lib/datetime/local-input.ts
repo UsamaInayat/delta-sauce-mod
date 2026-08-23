@@ -1,5 +1,5 @@
 const DATE_TIME_LOCAL_PATTERN =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
 
 export function parseDateTimeLocalValue(value: string): Date | null {
   const trimmed = value.trim();

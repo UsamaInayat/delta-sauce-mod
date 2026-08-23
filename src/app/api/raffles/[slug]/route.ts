@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   getRaffleLifecycleLabel,
   isRaffleEnterable,
+  isRafflePubliclyVisible,
 } from "@/lib/raffles/lifecycle";
 import { lookupEntryResult } from "@/lib/raffles/entry";
 
@@ -23,6 +24,10 @@ export async function GET(
   });
 
   if (!raffle) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (!isRafflePubliclyVisible(raffle)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

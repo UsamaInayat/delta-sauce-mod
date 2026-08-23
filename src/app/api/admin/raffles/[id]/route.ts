@@ -6,6 +6,74 @@ import { parseDateTimeLocalValue } from "@/lib/datetime/local-input";
 import { takeRaffleLiveSnapshots } from "@/lib/raffles/finalize";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 
+function parseOptionalDate(value: unknown) {
+  if (value == null || value === "") return null;
+  return parseDateTimeLocalValue(String(value));
+}
+
+function buildUpdateData(body: Record<string, unknown>) {
+  const isArtwork = body.type === RaffleType.ARTWORK_GIVEAWAY;
+  const title = isArtwork
+    ? String(body.itemName ?? body.title ?? "").trim()
+    : String(body.title ?? "").trim();
+
+  return {
+    title: title || undefined,
+    phase: isArtwork ? null : (body.phase as string | null | undefined) ?? null,
+    artist: isArtwork ? null : (body.artist as string | null | undefined) ?? null,
+    description: isArtwork ? "" : String(body.description ?? ""),
+    type: body.type as RaffleType | undefined,
+    chain: body.chain as import("@prisma/client").RaffleChain | undefined,
+    startsAt: parseOptionalDate(body.startsAt),
+    endsAt: parseOptionalDate(body.endsAt),
+    winnerCount:
+      body.winnerCount != null && body.winnerCount !== ""
+        ? Number(body.winnerCount)
+        : null,
+    spotCap:
+      body.spotCap != null && body.spotCap !== ""
+        ? Number(body.spotCap)
+        : null,
+    autoFinalize: body.autoFinalize !== false,
+    tokenGated: Boolean(body.tokenGated),
+    itemName: (body.itemName as string | null | undefined) ?? null,
+    openseaUrl: (body.openseaUrl as string | null | undefined) ?? null,
+    artworkCollection:
+      (body.artworkCollection as string | null | undefined) ?? null,
+  };
+}
+
+export async function GET(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  try {
+    await requireAdminSession();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await ctx.params;
+  const raffle = await prisma.raffle.findUnique({
+    where: { id },
+    include: {
+      collections: { include: { collection: true } },
+      _count: { select: { entries: true } },
+    },
+  });
+
+  if (!raffle) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    raffle: {
+      ...raffle,
+      lifecycle: getRaffleLifecycleLabel(raffle),
+    },
+  });
+}
+
 export async function PATCH(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
@@ -17,32 +85,17 @@ export async function PATCH(
   }
   const { id } = await ctx.params;
   const body = await req.json();
-  const isArtwork = body.type === RaffleType.ARTWORK_GIVEAWAY;
-  const title = isArtwork
-    ? String(body.itemName ?? body.title ?? "").trim()
-    : String(body.title ?? "").trim();
 
-  const raffle = await prisma.raffle.update({
+  if (body.startsAt && parseOptionalDate(body.startsAt) == null) {
+    return NextResponse.json({ error: "Invalid starts at time" }, { status: 400 });
+  }
+  if (body.endsAt && parseOptionalDate(body.endsAt) == null) {
+    return NextResponse.json({ error: "Invalid ends at time" }, { status: 400 });
+  }
+
+  await prisma.raffle.update({
     where: { id },
-    data: {
-      title: title || undefined,
-      phase: isArtwork ? null : body.phase,
-      artist: isArtwork ? null : body.artist,
-      description: isArtwork ? "" : body.description,
-      type: body.type,
-      chain: body.chain,
-      startsAt: body.startsAt
-        ? parseDateTimeLocalValue(body.startsAt)
-        : undefined,
-      endsAt: body.endsAt ? parseDateTimeLocalValue(body.endsAt) : undefined,
-      winnerCount: body.winnerCount != null ? Number(body.winnerCount) : undefined,
-      spotCap: body.spotCap != null ? Number(body.spotCap) : undefined,
-      autoFinalize: body.autoFinalize,
-      tokenGated: body.tokenGated,
-      itemName: body.itemName,
-      openseaUrl: body.openseaUrl,
-      artworkCollection: body.artworkCollection,
-    },
+    data: buildUpdateData(body),
   });
 
   if (Array.isArray(body.collectionIds)) {
@@ -56,6 +109,14 @@ export async function PATCH(
       });
     }
   }
+
+  const raffle = await prisma.raffle.findUnique({
+    where: { id },
+    include: {
+      collections: { include: { collection: true } },
+      _count: { select: { entries: true } },
+    },
+  });
 
   return NextResponse.json({ raffle });
 }
@@ -74,6 +135,11 @@ export async function POST(
   const action = body.action as string;
 
   if (action === "publish") {
+    const existing = await prisma.raffle.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const raffle = await prisma.raffle.update({
       where: { id },
       data: {
@@ -83,11 +149,19 @@ export async function POST(
     });
 
     const label = getRaffleLifecycleLabel(raffle);
-    if (label === "LIVE" && raffle.tokenGated) {
+    if (label === "LIVE" && raffle.tokenGated && !existing.liveSnapshotAt) {
       await takeRaffleLiveSnapshots(id);
     }
 
-    return NextResponse.json({ raffle });
+    const full = await prisma.raffle.findUnique({
+      where: { id },
+      include: {
+        collections: { include: { collection: true } },
+        _count: { select: { entries: true } },
+      },
+    });
+
+    return NextResponse.json({ raffle: full });
   }
 
   if (action === "finalize") {

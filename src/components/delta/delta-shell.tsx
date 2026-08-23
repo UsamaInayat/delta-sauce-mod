@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { RafaelBranding } from "@/components/delta/rafael-branding";
+import { RafaelBranding, RafaelSticker } from "@/components/delta/rafael-branding";
 
 export type DeltaBreadcrumb = {
   label: string;
@@ -76,6 +76,7 @@ export function DeltaShell({
           <div className="al-wallclock" aria-hidden="true" />
 
           <div className="al-monitor">
+            <RafaelSticker />
             <div className="al-sticky" aria-hidden="true">
               mint
               <br />

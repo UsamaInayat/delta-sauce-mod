@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { DeltaReadme } from "@/components/delta/delta-readme";
 import { DeltaForm, type DeltaFormResult } from "@/components/delta/delta-form";
@@ -59,6 +60,7 @@ export default function RaffleDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const router = useRouter();
   const [slug, setSlug] = useState<string>("");
   const [raffle, setRaffle] = useState<RafflePayload | null>(null);
   const [wallet, setWallet] = useState("");
@@ -77,6 +79,10 @@ export default function RaffleDetailPage({
     if (!slug) return;
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
     const res = await fetch(`/api/raffles/${slug}?wallet=${encodeURIComponent(storedWallet)}`);
+    if (res.status === 404) {
+      router.replace("/raffles");
+      return;
+    }
     if (!res.ok) return;
     const data = (await res.json()) as { raffle: RafflePayload };
     setRaffle(data.raffle);
@@ -86,7 +92,7 @@ export default function RaffleDetailPage({
     } else if (storedWallet) {
       setWallet(storedWallet);
     }
-  }, [slug]);
+  }, [slug, router]);
 
   useEffect(() => {
     void load();
