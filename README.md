@@ -80,23 +80,13 @@ Check deploy logs for `Applying migration` — that confirms tables were created
 4. **Create Raffle** tab → build and publish a raffle
 5. User side: `/raffles`
 
-### Step 8 — Cron (auto-finalize raffles)
+### Step 8 — Background jobs (automatic)
 
-Raffles need a periodic job to go live and auto-finalize. Options:
+Raffles go live, take token-gate snapshots, and auto-finalize using the **same in-process scheduler pattern as Rafael** — a 5-second poll started via `instrumentation.ts` when `npm start` runs.
 
-**Option A — Railway Cron (paid plans)**  
-Add a cron service that hits your endpoint every minute:
+No external cron job is required on Railway.
 
-```
-GET https://your-domain.up.railway.app/api/cron/process
-Authorization: Bearer YOUR_CRON_SECRET
-```
-
-**Option B — Free external cron**  
-Use [cron-job.org](https://cron-job.org) or similar:
-- URL: `https://your-domain.up.railway.app/api/cron/process`
-- Schedule: every 1 minute
-- Header: `Authorization: Bearer YOUR_CRON_SECRET`
+The `/api/cron/process` endpoint remains available as an optional manual trigger or backup if you ever deploy to serverless (Vercel).
 
 ---
 

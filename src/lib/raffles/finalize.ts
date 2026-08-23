@@ -177,27 +177,3 @@ export async function closeFcfsIfFull(raffleId: string) {
   return true;
 }
 
-export async function processDueRaffles() {
-  const now = new Date();
-  const published = await prisma.raffle.findMany({
-    where: { status: RaffleStatus.PUBLISHED },
-  });
-
-  for (const raffle of published) {
-    const label = getRaffleLifecycleLabel(raffle, now);
-
-    if (
-      label === "LIVE" &&
-      raffle.tokenGated &&
-      !raffle.liveSnapshotAt &&
-      raffle.startsAt &&
-      raffle.startsAt <= now
-    ) {
-      await takeRaffleLiveSnapshots(raffle.id);
-    }
-
-    if (label === "ENDED" && raffle.autoFinalize) {
-      await finalizeRaffle(raffle.id).catch(() => null);
-    }
-  }
-}

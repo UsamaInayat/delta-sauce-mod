@@ -2,10 +2,7 @@ import { EntryStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { walletHoldsAnyCollection } from "@/lib/blockchain/holdings";
 import { isRaffleEnterable } from "@/lib/raffles/lifecycle";
-import {
-  closeFcfsIfFull,
-  takeRaffleLiveSnapshots,
-} from "@/lib/raffles/finalize";
+import { closeFcfsIfFull, takeRaffleLiveSnapshots } from "@/lib/raffles/finalize";
 import {
   normalizeWallet,
   normalizeXHandle,

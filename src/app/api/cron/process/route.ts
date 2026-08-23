@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { processDueRaffles } from "@/lib/raffles/finalize";
+import { processDueRaffles } from "@/lib/raffles/process-due";
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization");
