@@ -1977,106 +1977,40 @@
   display: flex !important;
   flex-wrap: wrap !important;
   align-content: flex-start !important;
-  gap: 22px 28px !important;
-  padding: 4px 6px !important;
+  gap: 10px 18px !important;
+  padding: 2px 6px !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-folder {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  width: 88px !important;
-  padding: 6px 4px 8px !important;
+.arena-portfolio-wrapper .al-raffle-folders .al-icon {
   text-decoration: none !important;
-  color: #fff !important;
-  border: 1px dotted transparent !important;
-  border-radius: 0 !important;
-  transition: filter 0.2s ease, box-shadow 0.2s ease !important;
+  cursor: pointer !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-folder:hover,
-.arena-portfolio-wrapper .al-raffle-folder:focus-visible {
-  background: rgba(0, 0, 128, 0.38) !important;
-  border-color: rgba(255, 255, 255, 0.95) !important;
-  outline: none !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-icon {
-  display: block !important;
-  width: 32px !important;
-  height: 32px !important;
-  margin-bottom: 6px !important;
-  background:
-    linear-gradient(180deg, #ffe566 0 38%, #ffb300 38% 100%) !important;
-  border: 1px solid #000 !important;
-  border-radius: 0 2px 2px 2px !important;
-  position: relative !important;
-  image-rendering: pixelated !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-icon::before {
-  content: "" !important;
-  position: absolute !important;
-  top: -4px !important;
-  left: 2px !important;
-  width: 14px !important;
-  height: 6px !important;
-  background: #ffe566 !important;
-  border: 1px solid #000 !important;
-  border-bottom: none !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-label {
-  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
-  font-size: 11px !important;
-  line-height: 1.2 !important;
-  text-align: center !important;
-  text-shadow: 1px 1px 0 #000 !important;
-  word-break: break-word !important;
-  max-width: 100% !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-live .al-raffle-folder-icon {
-  filter: none !important;
-  box-shadow: none !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-lost {
-  filter: grayscale(1) !important;
-  opacity: 0.82 !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-lost .al-raffle-folder-icon {
-  filter: grayscale(1) contrast(0.85) !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-lost .al-raffle-folder-label {
-  color: #e8e8e8 !important;
-}
-
-.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-icon {
+.arena-portfolio-wrapper .al-raffle-folder-won .al-icon-folderimg {
   background:
     linear-gradient(180deg, #8dff8d 0 38%, #22c022 38% 100%) !important;
   border-color: #004400 !important;
   box-shadow:
     0 0 10px rgba(55, 214, 88, 0.95),
     0 0 22px rgba(55, 214, 88, 0.65),
-    0 0 36px rgba(55, 214, 88, 0.35) !important;
+    0 0 36px rgba(55, 214, 88, 0.35),
+    2px 2px 0 rgba(0, 0, 0, 0.35) !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-icon::before {
+.arena-portfolio-wrapper .al-raffle-folder-won .al-icon-folderimg::before {
   background: #8dff8d !important;
   border-color: #004400 !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-folder-won .al-raffle-folder-label {
+.arena-portfolio-wrapper .al-raffle-folder-won .al-icon-label {
   color: #c8ffc8 !important;
   text-shadow:
     0 0 6px rgba(55, 214, 88, 0.9),
     1px 1px 0 #003300 !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-folder-won:hover {
+.arena-portfolio-wrapper .al-raffle-folder-won:hover,
+.arena-portfolio-wrapper .al-raffle-folder-won:focus-visible {
   background: rgba(0, 80, 0, 0.35) !important;
 }
 
@@ -2285,7 +2219,8 @@
   padding: 2px 6px 14px !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon {
+.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon,
+.arena-portfolio-wrapper .al-raffle-folders .al-icon {
   all: unset;
   display: flex !important;
   flex-direction: column !important;
@@ -2302,13 +2237,16 @@
 
 .arena-portfolio-wrapper .al-raffle-shortcuts .al-icon:hover,
 .arena-portfolio-wrapper .al-raffle-shortcuts .al-icon:focus-visible,
-.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon.al-selected {
+.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon.al-selected,
+.arena-portfolio-wrapper .al-raffle-folders .al-icon:hover,
+.arena-portfolio-wrapper .al-raffle-folders .al-icon:focus-visible {
   background: rgba(0, 0, 128, 0.38) !important;
   border: 1px dotted rgba(255, 255, 255, 0.95) !important;
   outline: none !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon-img {
+.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon-img,
+.arena-portfolio-wrapper .al-raffle-folders .al-icon-img {
   display: block !important;
   width: 32px !important;
   height: 26px !important;
@@ -2330,7 +2268,8 @@
   background: linear-gradient(135deg, #55ffff 0 33%, #0000a8 33% 66%, #ff55ff 66%) !important;
 }
 
-.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon-label {
+.arena-portfolio-wrapper .al-raffle-shortcuts .al-icon-label,
+.arena-portfolio-wrapper .al-raffle-folders .al-icon-label {
   font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
   font-size: 10px !important;
   line-height: 1.2 !important;

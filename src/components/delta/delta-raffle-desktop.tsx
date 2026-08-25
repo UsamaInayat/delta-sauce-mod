@@ -70,11 +70,11 @@ export function DeltaRaffleDesktop({ raffles }: { raffles: RaffleFolder[] }) {
             <Link
               key={raffle.slug}
               href={`/raffles/${raffle.slug}`}
-              className={`al-raffle-folder al-raffle-folder-${visual}`}
+              className={`al-icon${visual === "won" ? " al-raffle-folder-won" : ""}`}
               role="listitem"
             >
-              <span className="al-raffle-folder-icon" aria-hidden="true" />
-              <span className="al-raffle-folder-label">{raffle.title}</span>
+              <span className="al-icon-img al-icon-folderimg" aria-hidden="true" />
+              <span className="al-icon-label">{raffle.title}</span>
             </Link>
           );
         })}

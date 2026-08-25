@@ -235,13 +235,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (raffle.status !== RaffleStatus.DRAFT) {
-    return NextResponse.json(
-      { error: "Only draft raffles can be deleted" },
-      { status: 400 },
-    );
-  }
-
   await prisma.raffle.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

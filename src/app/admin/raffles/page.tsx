@@ -51,8 +51,12 @@ export default function SavedRafflesPage() {
     window.location.reload();
   }
 
-  async function removeDraft(id: string, title: string) {
-    if (!window.confirm(`Delete draft "${title}"? This cannot be undone.`)) {
+  async function removeRaffle(id: string, title: string) {
+    if (
+      !window.confirm(
+        `Delete "${title}" permanently? All entries will be removed and it will disappear from the public raffles page. This cannot be undone.`,
+      )
+    ) {
       return;
     }
 
@@ -122,22 +126,13 @@ export default function SavedRafflesPage() {
                         Edit
                       </Link>
                       {r.status === "DRAFT" ? (
-                        <>
-                          <button
-                            type="button"
-                            className="al-admin-btn"
-                            onClick={() => publish(r.id)}
-                          >
-                            Publish
-                          </button>
-                          <button
-                            type="button"
-                            className="al-admin-btn"
-                            onClick={() => removeDraft(r.id, r.title)}
-                          >
-                            Delete
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          className="al-admin-btn"
+                          onClick={() => publish(r.id)}
+                        >
+                          Publish
+                        </button>
                       ) : null}
                       {lifecycle === "ENDED" || lifecycle === "LIVE" ? (
                         <button
@@ -148,6 +143,13 @@ export default function SavedRafflesPage() {
                           Finalize
                         </button>
                       ) : null}
+                      <button
+                        type="button"
+                        className="al-admin-btn"
+                        onClick={() => removeRaffle(r.id, r.title)}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 );
