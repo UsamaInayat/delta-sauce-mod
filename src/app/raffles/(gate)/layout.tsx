@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { RaffleGateShell } from "@/components/delta/raffle-gate-shell";
 import { requireRaffleGate, RaffleGateError } from "@/lib/auth/raffle-gate";
 
+export const dynamic = "force-dynamic";
+
 export default async function RaffleGateLayout({
   children,
 }: {

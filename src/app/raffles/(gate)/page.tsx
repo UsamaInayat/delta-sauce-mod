@@ -1,7 +1,9 @@
 import { RaffleStatus } from "@prisma/client";
+import { redirect } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { DeltaRaffleDesktop } from "@/components/delta/delta-raffle-desktop";
 import { prisma } from "@/lib/prisma";
+import { requireRaffleGate, RaffleGateError } from "@/lib/auth/raffle-gate";
 import {
   getRaffleLifecycleLabel,
   isRaffleListedOnMainPage,
@@ -10,6 +12,15 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function RafflesPage() {
+  try {
+    await requireRaffleGate();
+  } catch (error) {
+    if (error instanceof RaffleGateError) {
+      redirect("/raffles/unlock?next=%2Fraffles");
+    }
+    throw error;
+  }
+
   const raffles = await prisma.raffle.findMany({
     where: { status: { not: RaffleStatus.DRAFT } },
     orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],

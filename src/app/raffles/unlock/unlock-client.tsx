@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { MacGateDialog } from "@/components/delta/mac-gate-dialog";
 
@@ -12,7 +12,6 @@ function normalizeNextPath(path: string | null) {
 }
 
 export default function RaffleUnlockPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,17 +22,23 @@ export default function RaffleUnlockPage() {
   const nextPath = normalizeNextPath(searchParams.get("next"));
 
   useEffect(() => {
-    void fetch("/api/raffles/gate/status")
-      .then((res) => res.json())
-      .then((data: { configured?: boolean; unlocked?: boolean }) => {
-        if (data.unlocked) {
-          window.location.assign(nextPath);
+    void fetch("/api/raffles/gate/status", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) {
+          setConfigured(false);
           return;
         }
+        const data = (await res.json()) as {
+          configured?: boolean;
+          unlocked?: boolean;
+        };
         setConfigured(data.configured !== false);
+        if (data.unlocked === true) {
+          window.location.replace(nextPath);
+        }
       })
       .catch(() => setConfigured(false));
-  }, [nextPath, router]);
+  }, [nextPath]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

@@ -4,18 +4,14 @@ import { COOKIE, gateTokenLooksValid } from "@/lib/auth/gate-token";
 
 const PUBLIC_ADMIN = "/admin/login";
 
-function isProtectedRaffleApi(pathname: string) {
-  if (pathname.startsWith("/api/raffles/gate")) return false;
-  if (/^\/api\/raffles\/[^/]+\/(gate\/status|unlock)$/.test(pathname)) {
-    return false;
-  }
-  if (pathname.startsWith("/api/raffles/")) return true;
-  if (pathname === "/api/ens/resolve") return true;
-  return false;
+function raffleUnlockPath(pathname: string, search: string) {
+  const unlock = new URL("/raffles/unlock", "http://local");
+  unlock.searchParams.set("next", `${pathname}${search}`);
+  return `${unlock.pathname}${unlock.search}`;
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
 
   if (pathname.startsWith("/admin")) {
     if (pathname === PUBLIC_ADMIN) return NextResponse.next();
@@ -32,14 +28,22 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isProtectedRaffleApi(pathname)) {
+  if (
+    pathname.startsWith("/raffles") &&
+    pathname !== "/raffles/unlock" &&
+    !pathname.startsWith("/api/")
+  ) {
     try {
       const gateToken = req.cookies.get(COOKIE)?.value;
       if (!gateTokenLooksValid(gateToken)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.redirect(
+          new URL(raffleUnlockPath(pathname, search), req.url),
+        );
       }
     } catch {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.redirect(
+        new URL(raffleUnlockPath(pathname, search), req.url),
+      );
     }
   }
 
@@ -47,5 +51,10 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/raffles/:path*", "/api/ens/resolve"],
+  matcher: [
+    "/admin/:path*",
+    "/raffles/:path*",
+    "/api/raffles/:path*",
+    "/api/ens/resolve",
+  ],
 };

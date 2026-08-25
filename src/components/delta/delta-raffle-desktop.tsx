@@ -72,6 +72,7 @@ export function DeltaRaffleDesktop({ raffles }: { raffles: RaffleFolder[] }) {
               href={`/raffles/${raffle.slug}`}
               className={`al-icon${visual === "won" ? " al-raffle-folder-won" : ""}`}
               role="listitem"
+              prefetch={false}
             >
               <span className="al-icon-img al-icon-folderimg" aria-hidden="true" />
               <span className="al-icon-label">{raffle.title}</span>

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const POLL_MS = 2500;
 
 export function RaffleGateWatcher() {
+  const wasUnlockedRef = useRef<boolean | null>(null);
+
   useEffect(() => {
     let active = true;
-    let wasUnlocked = true;
 
     async function check() {
       try {
@@ -17,7 +18,12 @@ export function RaffleGateWatcher() {
         const data = (await res.json()) as { unlocked?: boolean };
         const unlocked = data.unlocked === true;
 
-        if (wasUnlocked && !unlocked) {
+        if (wasUnlockedRef.current === null) {
+          wasUnlockedRef.current = unlocked;
+          return;
+        }
+
+        if (wasUnlockedRef.current && !unlocked) {
           const next = encodeURIComponent(
             window.location.pathname + window.location.search,
           );
@@ -25,7 +31,7 @@ export function RaffleGateWatcher() {
           return;
         }
 
-        wasUnlocked = unlocked;
+        wasUnlockedRef.current = unlocked;
       } catch {
         // ignore transient network errors
       }
