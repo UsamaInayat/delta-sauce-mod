@@ -369,6 +369,330 @@
   box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* desk props — tray, pens, easy button, keyboard, mouse, mug */
+.arena-portfolio-wrapper .al-tray {
+  position: absolute !important;
+  left: 2.5% !important;
+  top: 26px !important;
+  width: 84px !important;
+  transform: scaleY(0.8) rotate(-1deg) !important;
+}
+
+.arena-portfolio-wrapper .al-tray span {
+  display: block !important;
+  height: 16px !important;
+  margin-bottom: 6px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(#3a3a3e, #232326) !important;
+  border: 1px solid #17171a !important;
+  box-shadow:
+    inset 0 -3px 0 rgba(255, 255, 255, 0.06),
+    inset 0 3px 4px rgba(0, 0, 0, 0.6),
+    0 3px 5px rgba(0, 0, 0, 0.4) !important;
+  position: relative !important;
+}
+
+.arena-portfolio-wrapper .al-tray span::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 6px !important;
+  right: 6px !important;
+  top: 3px !important;
+  height: 7px !important;
+  background: linear-gradient(#f4f1e6, #d9d5c6) !important;
+  border-radius: 1px !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.arena-portfolio-wrapper .al-pencup {
+  position: absolute !important;
+  right: 3% !important;
+  top: 24px !important;
+  width: 26px !important;
+  height: 34px !important;
+  border-radius: 3px 3px 5px 5px !important;
+  transform: scaleY(0.85) !important;
+  background: linear-gradient(160deg, #2c3038, #1a1d23) !important;
+  border: 1px solid #101216 !important;
+  box-shadow:
+    0 4px 7px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px rgba(0, 0, 0, 0.6) !important;
+}
+
+.arena-portfolio-wrapper .al-pencup i {
+  position: absolute !important;
+  bottom: 26px !important;
+  width: 3px !important;
+  height: 22px !important;
+  border-radius: 1px !important;
+}
+
+.arena-portfolio-wrapper .al-pencup i:nth-child(1) {
+  left: 5px !important;
+  background: #d8b634 !important;
+  transform: rotate(-8deg) !important;
+}
+
+.arena-portfolio-wrapper .al-pencup i:nth-child(2) {
+  left: 11px !important;
+  background: #3c82dc !important;
+  transform: rotate(3deg) !important;
+}
+
+.arena-portfolio-wrapper .al-pencup i:nth-child(3) {
+  left: 17px !important;
+  background: #d62838 !important;
+  transform: rotate(10deg) !important;
+}
+
+.arena-portfolio-wrapper .al-easy {
+  position: absolute !important;
+  z-index: 12 !important;
+  pointer-events: auto !important;
+  left: 19% !important;
+  top: 28px !important;
+  width: 58px !important;
+  height: 46px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+.arena-portfolio-wrapper .al-easy:focus-visible {
+  outline: 1px dotted #fff !important;
+  outline-offset: 3px !important;
+}
+
+.arena-portfolio-wrapper .al-easy-shadow {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: -3px !important;
+  width: 66px !important;
+  height: 12px !important;
+  transform: translateX(-50%) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.5), transparent 70%) !important;
+}
+
+.arena-portfolio-wrapper .al-easy-base {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 0 !important;
+  width: 62px !important;
+  height: 22px !important;
+  transform: translateX(-50%) !important;
+  border-radius: 50% !important;
+  background: linear-gradient(180deg, #f2f2f2 0%, #c8c8c8 35%, #8e8e8e 70%, #6e6e6e 100%) !important;
+  border: 1px solid #565656 !important;
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+.arena-portfolio-wrapper .al-easy-base::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 6px !important;
+  right: 6px !important;
+  top: 4px !important;
+  bottom: 6px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(180deg, #5f5f5f, #9c9c9c) !important;
+}
+
+.arena-portfolio-wrapper .al-easy-dome {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 8px !important;
+  width: 46px !important;
+  height: 36px !important;
+  margin-left: -23px !important;
+  border-radius: 50% 50% 44% 44% / 62% 62% 38% 38% !important;
+  background:
+    radial-gradient(ellipse 40% 26% at 34% 20%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(ellipse at 50% 30%, #ff6450, #d92818 52%, #8f1004 96%) !important;
+  border: 1px solid #6e0c02 !important;
+  box-shadow:
+    inset 0 -6px 10px rgba(80, 0, 0, 0.55),
+    inset 0 2px 2px rgba(255, 255, 255, 0.25),
+    0 2px 3px rgba(0, 0, 0, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding-top: 6px !important;
+  color: #fff !important;
+  font-family: Tahoma, Arial, sans-serif !important;
+  font-style: italic !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  transition: transform 0.09s ease !important;
+  transform-origin: 50% 100% !important;
+}
+
+.arena-portfolio-wrapper .al-easy:hover .al-easy-dome {
+  filter: brightness(1.06) !important;
+}
+
+.arena-portfolio-wrapper .al-easy.al-pressed .al-easy-dome {
+  transform: translateY(4px) scaleY(0.78) !important;
+}
+
+.arena-portfolio-wrapper .al-easy-bubble {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 54px !important;
+  transform: translateX(-50%) !important;
+  white-space: nowrap !important;
+  background: #ffffe1 !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+  padding: 3px 8px !important;
+  font-family: Tahoma, Arial, sans-serif !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease !important;
+  z-index: 5 !important;
+}
+
+.arena-portfolio-wrapper .al-easy.al-talking .al-easy-bubble {
+  opacity: 1 !important;
+}
+
+.arena-portfolio-wrapper .al-keyboard {
+  position: absolute !important;
+  left: 50% !important;
+  top: 26px !important;
+  transform: translateX(-50%) scaleY(0.82) !important;
+  width: min(54%, 400px) !important;
+  height: 72px !important;
+  border-radius: 7px !important;
+  padding: 7px 9px 9px !important;
+  background: linear-gradient(#d8d1bf, #a89f8c) !important;
+  border: 2px solid #7d7462 !important;
+  border-bottom-width: 5px !important;
+  box-shadow:
+    0 8px 14px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+.arena-portfolio-wrapper .al-keys {
+  height: 38px !important;
+  border-radius: 3px !important;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 15px, rgba(90, 82, 66, 0.55) 15px 17px),
+    repeating-linear-gradient(0deg, #c9c2b0 0 10px, rgba(90, 82, 66, 0.55) 10px 12px) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+.arena-portfolio-wrapper .al-spacebar {
+  margin: 5px auto 0 !important;
+  width: 46% !important;
+  height: 11px !important;
+  border-radius: 3px !important;
+  background: linear-gradient(#cfc8b6, #b0a893) !important;
+  border: 1px solid #857c68 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.arena-portfolio-wrapper .al-mousepad {
+  position: absolute !important;
+  right: 9% !important;
+  top: 38px !important;
+  width: 92px !important;
+  height: 52px !important;
+  border-radius: 8px !important;
+  transform: scaleY(0.7) rotate(-2deg) !important;
+  background: linear-gradient(#1d3a5f, #142a46) !important;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.arena-portfolio-wrapper .al-mouse {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 30px !important;
+  height: 40px !important;
+  border-radius: 45% 45% 48% 48% !important;
+  background: linear-gradient(160deg, #ddd6c4, #a89f8c) !important;
+  border: 1px solid #7d7462 !important;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4) !important;
+}
+
+.arena-portfolio-wrapper .al-mouse::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 4px !important;
+  width: 1px !important;
+  height: 12px !important;
+  background: #7d7462 !important;
+}
+
+.arena-portfolio-wrapper .al-mug {
+  position: absolute !important;
+  left: 10% !important;
+  top: 28px !important;
+  width: 34px !important;
+  height: 40px !important;
+  border-radius: 4px 4px 8px 8px !important;
+  transform: scaleY(0.82) !important;
+  background: linear-gradient(160deg, #c8452e, #8e2c1c) !important;
+  box-shadow:
+    0 5px 9px rgba(0, 0, 0, 0.45),
+    inset 0 3px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.arena-portfolio-wrapper .al-mug::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -12px !important;
+  top: 8px !important;
+  width: 14px !important;
+  height: 18px !important;
+  border: 4px solid #a83421 !important;
+  border-left: none !important;
+  border-radius: 0 10px 10px 0 !important;
+}
+
+.arena-portfolio-wrapper .al-confetti {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 24 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.arena-portfolio-wrapper .al-confetti span {
+  position: absolute !important;
+  top: -12px !important;
+  width: 7px !important;
+  height: 11px !important;
+  opacity: 0.9 !important;
+  animation: alFall linear forwards !important;
+}
+
+@keyframes alFall {
+  0% {
+    transform: translateY(-14px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(640px) rotate(540deg);
+  }
+}
+
 .arena-portfolio-wrapper .al-sticky,
 .delta-admin-shell .al-sticky {
   position: absolute !important;
@@ -1224,6 +1548,40 @@
   .arena-portfolio-wrapper .al-desk,
   .delta-admin-shell .al-desk {
     height: 74px !important;
+  }
+
+  .arena-portfolio-wrapper .al-keyboard {
+    top: 18px !important;
+    height: 52px !important;
+    padding: 5px 6px 6px !important;
+  }
+
+  .arena-portfolio-wrapper .al-keys {
+    height: 26px !important;
+  }
+
+  .arena-portfolio-wrapper .al-mug,
+  .arena-portfolio-wrapper .al-mousepad,
+  .arena-portfolio-wrapper .al-tray,
+  .arena-portfolio-wrapper .al-pencup {
+    display: none !important;
+  }
+
+  .arena-portfolio-wrapper .al-easy {
+    left: 6% !important;
+    top: 20px !important;
+    transform: scale(0.8) !important;
+  }
+
+  .arena-portfolio-wrapper .al-leg,
+  .delta-admin-shell .al-leg {
+    height: 40px !important;
+  }
+
+  .arena-portfolio-wrapper .al-floor,
+  .delta-admin-shell .al-floor {
+    margin-top: 38px !important;
+    height: 64px !important;
   }
 
   .delta-admin-shell .al-admin-tabs {

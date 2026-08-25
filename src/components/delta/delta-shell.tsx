@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { DeltaDesk } from "@/components/delta/delta-desk";
 import { RafaelBranding, RafaelSticker } from "@/components/delta/rafael-branding";
 
 export type DeltaBreadcrumb = {
@@ -108,13 +109,7 @@ export function DeltaShell({
             </div>
           </div>
 
-          {showDesk ? (
-            <>
-              <div className="al-desk" aria-hidden="true" />
-              <div className="al-leg al-leg-left" aria-hidden="true" />
-              <div className="al-leg al-leg-right" aria-hidden="true" />
-            </>
-          ) : null}
+          {showDesk ? <DeltaDesk /> : null}
         </div>
 
         <div className="al-floor" aria-hidden="true" />
