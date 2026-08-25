@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  COOKIE,
+  createGateSessionValue,
+  gateSessionCookieOptions,
+} from "@/lib/auth/gate-token";
+import {
   checkGateRateLimit,
   clearGateRateLimit,
   getClientIp,
   recordGateFailure,
 } from "@/lib/auth/gate-rate-limit";
 import {
+  findGateRecord,
   RaffleGateError,
-  setRaffleGateSession,
   verifySubmittedGatePassword,
 } from "@/lib/auth/raffle-gate";
 
@@ -45,8 +50,16 @@ export async function POST(req: NextRequest) {
     }
 
     clearGateRateLimit(ip);
-    await setRaffleGateSession();
-    return NextResponse.json({ ok: true });
+
+    const gate = await findGateRecord();
+    if (!gate) {
+      throw new RaffleGateError("RAFFLE_GATE_NOT_CONFIGURED");
+    }
+
+    const token = createGateSessionValue(gate.passwordUpdatedAt.getTime());
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(COOKIE, token, gateSessionCookieOptions());
+    return response;
   } catch (error) {
     if (error instanceof RaffleGateError) {
       return NextResponse.json(

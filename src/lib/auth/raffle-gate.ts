@@ -7,8 +7,8 @@ import {
 } from "@/lib/auth/gate-crypto";
 import {
   COOKIE,
-  createGateToken,
-  MAX_AGE,
+  createGateSessionValue,
+  gateSessionCookieOptions,
   verifyGateToken,
 } from "@/lib/auth/gate-token";
 
@@ -60,15 +60,9 @@ export async function setRaffleGateSession() {
   const gate = await findGateRecord();
   if (!gate) throw new RaffleGateError("RAFFLE_GATE_NOT_CONFIGURED");
 
-  const token = createGateToken(gate.passwordUpdatedAt.getTime());
+  const token = createGateSessionValue(gate.passwordUpdatedAt.getTime());
   const jar = await cookies();
-  jar.set(COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE,
-    path: "/",
-  });
+  jar.set(COOKIE, token, gateSessionCookieOptions());
 }
 
 export async function clearRaffleGateSession() {

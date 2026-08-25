@@ -4,16 +4,7 @@ import { COOKIE, gateTokenLooksValid } from "@/lib/auth/gate-token";
 
 const PUBLIC_ADMIN = "/admin/login";
 
-function isGatePublicPath(pathname: string) {
-  if (pathname === "/raffles/unlock") return true;
-  if (pathname.startsWith("/api/raffles/gate")) return true;
-  return false;
-}
-
-function isProtectedRafflePath(pathname: string) {
-  if (pathname === "/") return true;
-  if (pathname === "/raffles") return true;
-  if (pathname.startsWith("/raffles/") && !isGatePublicPath(pathname)) return true;
+function isProtectedRaffleApi(pathname: string) {
   if (pathname.startsWith("/api/raffles/") && !pathname.startsWith("/api/raffles/gate")) {
     return true;
   }
@@ -39,35 +30,16 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!isProtectedRafflePath(pathname)) {
-    return NextResponse.next();
-  }
-
-  if (isGatePublicPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  const gateToken = req.cookies.get(COOKIE)?.value;
-  if (!gateTokenLooksValid(gateToken)) {
-    if (pathname.startsWith("/api/")) {
+  if (isProtectedRaffleApi(pathname)) {
+    const gateToken = req.cookies.get(COOKIE)?.value;
+    if (!gateTokenLooksValid(gateToken)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const unlock = new URL("/raffles/unlock", req.url);
-    unlock.searchParams.set("next", pathname);
-    return NextResponse.redirect(unlock);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/raffles",
-    "/admin/:path*",
-    "/raffles/:path*",
-    "/api/raffles/:path*",
-    "/api/ens/resolve",
-  ],
+  matcher: ["/admin/:path*", "/api/raffles/:path*", "/api/ens/resolve"],
 };

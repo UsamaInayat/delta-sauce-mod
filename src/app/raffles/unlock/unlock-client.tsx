@@ -27,7 +27,7 @@ export default function RaffleUnlockPage() {
       .then((res) => res.json())
       .then((data: { configured?: boolean; unlocked?: boolean }) => {
         if (data.unlocked) {
-          router.replace(nextPath);
+          window.location.assign(nextPath);
           return;
         }
         setConfigured(data.configured !== false);
@@ -55,8 +55,7 @@ export default function RaffleUnlockPage() {
         return;
       }
 
-      router.replace(nextPath);
-      router.refresh();
+      window.location.assign(nextPath);
     } finally {
       setSubmitting(false);
     }

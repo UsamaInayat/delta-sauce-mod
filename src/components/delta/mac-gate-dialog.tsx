@@ -36,11 +36,12 @@ export function MacGateDialog({
             <span className="mac-gate-lock" />
           </div>
 
-          <p className="mac-gate-copy">
-            {configured
-              ? "Enter the password to unlock the DeltaSauce raffle platform on this Macintosh."
-              : "Raffle access has not been configured yet. Ask an admin to set the gate password."}
-          </p>
+          {!configured ? (
+            <p className="mac-gate-copy">
+              Raffle access has not been configured yet. Ask an admin to set the gate
+              password.
+            </p>
+          ) : null}
 
           {configured ? (
             <>
