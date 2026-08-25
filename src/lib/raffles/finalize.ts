@@ -4,8 +4,8 @@ import {
   RaffleType,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { walletHoldsAnyCollection } from "@/lib/blockchain/holdings";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+import { shouldExcludeNonHolder } from "@/lib/raffles/token-gate";
 
 export function weightedRandomDraw(
   entries: Array<{ id: string; weight: number }>,
@@ -38,25 +38,40 @@ export async function purgeNonHolders(raffleId: string) {
     where: { id: raffleId },
     include: { collections: { include: { collection: true } } },
   });
-  if (!raffle?.tokenGated) return 0;
+  if (!raffle?.tokenGated) {
+    return { removed: 0, skipped: 0 };
+  }
 
-  const cols = raffle.collections.map((rc) => rc.collection);
+  const collections = raffle.collections.map((link) => link.collection);
+  if (!collections.length) {
+    return { removed: 0, skipped: 0 };
+  }
+
   const entries = await prisma.raffleEntry.findMany({
     where: { raffleId, status: EntryStatus.SUBMITTED },
   });
 
   let removed = 0;
+  let skipped = 0;
+
   for (const entry of entries) {
-    const { holds } = await walletHoldsAnyCollection(entry.walletAddress, cols);
-    if (!holds) {
-      await prisma.raffleEntry.update({
-        where: { id: entry.id },
-        data: { status: EntryStatus.EXCLUDED },
-      });
-      removed += 1;
+    const exclude = await shouldExcludeNonHolder(
+      entry.walletAddress,
+      collections,
+    );
+    if (!exclude) {
+      skipped += 1;
+      continue;
     }
+
+    await prisma.raffleEntry.update({
+      where: { id: entry.id },
+      data: { status: EntryStatus.EXCLUDED },
+    });
+    removed += 1;
   }
-  return removed;
+
+  return { removed, skipped };
 }
 
 export async function finalizeRaffle(raffleId: string) {

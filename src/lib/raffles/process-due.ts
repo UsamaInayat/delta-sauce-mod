@@ -11,17 +11,6 @@ export async function processDueRaffles() {
   for (const raffle of published) {
     const label = getRaffleLifecycleLabel(raffle, now);
 
-    if (
-      label === "LIVE" &&
-      raffle.tokenGated &&
-      !raffle.liveSnapshotAt &&
-      raffle.startsAt &&
-      raffle.startsAt <= now
-    ) {
-      const { takeRaffleLiveSnapshots } = await import("@/lib/raffles/finalize");
-      await takeRaffleLiveSnapshots(raffle.id);
-    }
-
     if (label === "ENDED" && raffle.autoFinalize) {
       const { finalizeRaffle } = await import("@/lib/raffles/finalize");
       await finalizeRaffle(raffle.id).catch(() => null);

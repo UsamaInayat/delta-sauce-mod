@@ -92,9 +92,9 @@ The `/api/cron/process` endpoint remains available as an optional manual trigger
 
 ## Token gating
 
-- **Go-live:** snapshots eligible collections via OpenSea proxy
-- **Entry:** realtime on-chain hold check + go-live snapshot match
-- **Finalize:** non-holders purged before winner draw
+- **Entry:** live wallet check against each eligible collection contract (any match allows entry)
+- **Finalize:** non-holders are double-checked and excluded before winners are drawn
+- **Safety:** API failures never exclude a holder; inconclusive checks are skipped at finalize time
 
 ## Repo
 

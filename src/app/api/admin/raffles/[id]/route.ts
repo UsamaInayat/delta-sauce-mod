@@ -3,7 +3,6 @@ import { RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
-import { takeRaffleLiveSnapshots } from "@/lib/raffles/finalize";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 
 function parseOptionalDate(value: unknown) {
@@ -146,11 +145,6 @@ export async function POST(
         publishedAt: new Date(),
       },
     });
-
-    const label = getRaffleLifecycleLabel(raffle);
-    if (label === "LIVE" && raffle.tokenGated && !existing.liveSnapshotAt) {
-      await takeRaffleLiveSnapshots(id);
-    }
 
     const full = await prisma.raffle.findUnique({
       where: { id },

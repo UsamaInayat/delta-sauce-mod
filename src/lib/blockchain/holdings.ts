@@ -5,6 +5,22 @@ const PROXY =
   process.env.OPENSEA_PROXY_URL ??
   "https://sauce.deltasauceartist.workers.dev";
 
+export type EligibleCollection = {
+  name: string;
+  contractAddress: string;
+  chain: RaffleChain;
+};
+
+export type WalletHoldResult = {
+  holds: boolean;
+  verified: boolean;
+  matchedContract?: string;
+};
+
+type NftRow = {
+  contract?: string;
+};
+
 function chainPath(chain: RaffleChain) {
   switch (chain) {
     case RaffleChain.ETHEREUM:
@@ -22,6 +38,18 @@ function chainPath(chain: RaffleChain) {
   }
 }
 
+function normalizeContract(address: string) {
+  return address.trim().toLowerCase();
+}
+
+function nftMatchesContract(nft: NftRow, contract: string) {
+  return normalizeContract(nft.contract ?? "") === contract;
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function proxyFetch<T>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url, {
@@ -35,39 +63,99 @@ async function proxyFetch<T>(url: string): Promise<T | null> {
   }
 }
 
+async function fetchWalletNftPage(input: {
+  chain: string;
+  wallet: string;
+  cursor?: string | null;
+}) {
+  const qs = new URLSearchParams({ limit: "50" });
+  if (input.cursor) qs.set("next", input.cursor);
+
+  const url = `${PROXY}/chain/${input.chain}/account/${input.wallet}/nfts?${qs}`;
+  return proxyFetch<{ nfts?: NftRow[]; next?: string }>(url);
+}
+
 export async function walletHoldsFromCollection(input: {
   wallet: string;
   contractAddress: string;
   chain: RaffleChain;
-}): Promise<boolean> {
+  retries?: number;
+}): Promise<WalletHoldResult> {
   const wallet = normalizeWallet(input.wallet);
-  const contract = input.contractAddress.toLowerCase();
+  const contract = normalizeContract(input.contractAddress);
   const chain = chainPath(input.chain);
+  const retries = input.retries ?? 2;
 
-  const url = `${PROXY}/chain/${chain}/account/${wallet}/nfts?limit=50`;
-  const data = await proxyFetch<{ nfts?: Array<{ contract?: string }> }>(url);
-  if (!data) return false;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let cursor: string | null = null;
+    let sawSuccessfulPage = false;
 
-  return (data.nfts ?? []).some(
-    (n) => (n.contract ?? "").toLowerCase() === contract,
-  );
+    for (let page = 0; page < 40; page++) {
+      const data = await fetchWalletNftPage({ chain, wallet, cursor });
+      if (!data) break;
+
+      sawSuccessfulPage = true;
+      const nfts = data.nfts ?? [];
+      if (nfts.some((nft) => nftMatchesContract(nft, contract))) {
+        return { holds: true, verified: true, matchedContract: contract };
+      }
+
+      cursor = data.next ?? null;
+      if (!cursor) {
+        return { holds: false, verified: true };
+      }
+    }
+
+    if (sawSuccessfulPage) {
+      return { holds: false, verified: true };
+    }
+
+    if (attempt < retries) {
+      await sleep(350 * (attempt + 1));
+    }
+  }
+
+  return { holds: false, verified: false };
 }
 
 export async function walletHoldsAnyCollection(
   wallet: string,
-  collections: Array<{ contractAddress: string; chain: RaffleChain }>,
-): Promise<{ holds: boolean; matched?: string }> {
-  for (const c of collections) {
-    const holds = await walletHoldsFromCollection({
-      wallet,
-      contractAddress: c.contractAddress,
-      chain: c.chain,
-    });
-    if (holds) {
-      return { holds: true, matched: c.contractAddress };
-    }
+  collections: EligibleCollection[],
+  options?: { retries?: number },
+): Promise<WalletHoldResult> {
+  if (!collections.length) {
+    return { holds: false, verified: true };
   }
-  return { holds: false };
+
+  let sawVerifiedMiss = false;
+  for (const collection of collections) {
+    const result = await walletHoldsFromCollection({
+      wallet,
+      contractAddress: collection.contractAddress,
+      chain: collection.chain,
+      retries: options?.retries,
+    });
+
+    if (result.holds) {
+      return {
+        holds: true,
+        verified: true,
+        matchedContract: result.matchedContract ?? collection.contractAddress,
+      };
+    }
+
+    if (result.verified) {
+      sawVerifiedMiss = true;
+      continue;
+    }
+
+    return { holds: false, verified: false };
+  }
+
+  return {
+    holds: false,
+    verified: sawVerifiedMiss,
+  };
 }
 
 type NftListItem = { identifier?: string };
@@ -106,7 +194,7 @@ export async function fetchCollectionHolders(input: {
   limit?: number;
 }): Promise<Array<{ walletAddress: string; balance: number }>> {
   const chain = chainPath(input.chain);
-  const contract = input.contractAddress.toLowerCase();
+  const contract = normalizeContract(input.contractAddress);
   const maxTokens = input.limit ?? 500;
   const holders = new Map<string, number>();
 

@@ -1547,6 +1547,12 @@
   margin-bottom: 12px !important;
 }
 
+.delta-admin-shell .al-admin-toolbar-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
 .delta-admin-shell .al-admin-toolbar .arena-form-title {
   margin: 0 !important;
 }

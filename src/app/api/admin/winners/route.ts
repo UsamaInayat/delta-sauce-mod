@@ -1,38 +1,46 @@
-import { NextResponse } from "next/server";
 import { EntryStatus, RaffleStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/auth/admin-session";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  try {
-    await requireAdminSession();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  await requireAdminSession();
 
   const raffles = await prisma.raffle.findMany({
     where: { status: RaffleStatus.CLOSED },
-    orderBy: { closedAt: "desc" },
+    orderBy: { endsAt: "desc" },
     include: {
       entries: {
-        where: { status: EntryStatus.ACCEPTED },
+        where: { status: { not: EntryStatus.CANCELLED } },
         orderBy: { createdAt: "asc" },
       },
     },
   });
 
   return NextResponse.json({
-    winners: raffles.map((r) => ({
-      id: r.id,
-      slug: r.slug,
-      title: r.title,
-      type: r.type,
-      closedAt: r.closedAt,
-      winners: r.entries.map((e) => ({
-        walletAddress: e.walletAddress,
-        walletEns: e.walletEns,
-        xHandle: e.xHandle,
-      })),
-    })),
+    rows: raffles.map((raffle) => {
+      const winners = raffle.entries.filter((e) => e.status === EntryStatus.ACCEPTED);
+      const entrants = raffle.entries;
+
+      return {
+        id: raffle.id,
+        slug: raffle.slug,
+        title: raffle.title,
+        type: raffle.type,
+        endsAt: raffle.endsAt?.toISOString() ?? null,
+        winners: winners.map((entry) => ({
+          walletAddress: entry.walletAddress,
+          walletEns: entry.walletEns,
+          xHandle: entry.xHandle,
+        })),
+        entrants: entrants.map((entry) => ({
+          walletAddress: entry.walletAddress,
+          walletEns: entry.walletEns,
+          xHandle: entry.xHandle,
+          status: entry.status,
+          createdAt: entry.createdAt.toISOString(),
+        })),
+      };
+    }),
   });
 }
