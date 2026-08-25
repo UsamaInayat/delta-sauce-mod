@@ -4,11 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+import { sanitizeRaffleForAdmin } from "@/lib/auth/raffle-password";
 import {
-  publishPasswordProtectedRaffle,
-  sanitizeRaffleForAdmin,
-} from "@/lib/auth/raffle-password";
-import { RafflePasswordPoolError } from "@/lib/raffles/password-pool";
+  buildRafflePasswordUpdate,
+  validatePasswordProtectedForPublish,
+} from "@/lib/raffles/raffle-password-fields";
 
 function parseOptionalDate(value: unknown) {
   return parseStoredDateTime(value);
@@ -105,6 +105,23 @@ export async function PATCH(
   const updateData = buildUpdateData(body);
   if (existing.status !== RaffleStatus.DRAFT) {
     delete (updateData as { passwordProtected?: boolean }).passwordProtected;
+  } else {
+    Object.assign(
+      updateData,
+      buildRafflePasswordUpdate(body, Boolean(existing.passwordEnc)),
+    );
+  }
+
+  if (
+    existing.status === RaffleStatus.DRAFT &&
+    Boolean(body.passwordProtected) &&
+    !String(body.password ?? "").trim() &&
+    !existing.passwordEnc
+  ) {
+    return NextResponse.json(
+      { error: "Password is required for password-protected raffles." },
+      { status: 400 },
+    );
   }
 
   await prisma.raffle.update({
@@ -163,31 +180,21 @@ export async function POST(
       );
     }
 
-    let assignedPassword: string | null = null;
-
-    try {
-      await prisma.raffle.update({
-        where: { id },
-        data: {
-          status: RaffleStatus.PUBLISHED,
-          publishedAt: new Date(),
-        },
-      });
-
-      if (existing.passwordProtected) {
-        const result = await publishPasswordProtectedRaffle(id);
-        assignedPassword = result.word;
-      }
-    } catch (error) {
-      if (error instanceof RafflePasswordPoolError) {
-        await prisma.raffle.update({
-          where: { id },
-          data: { status: RaffleStatus.DRAFT, publishedAt: null },
-        });
-        return NextResponse.json({ error: error.message }, { status: 503 });
-      }
-      throw error;
+    const publishError = validatePasswordProtectedForPublish(
+      existing.passwordProtected,
+      existing.passwordEnc,
+    );
+    if (publishError) {
+      return NextResponse.json({ error: publishError }, { status: 400 });
     }
+
+    await prisma.raffle.update({
+      where: { id },
+      data: {
+        status: RaffleStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+    });
 
     const full = await prisma.raffle.findUnique({
       where: { id },
@@ -199,12 +206,6 @@ export async function POST(
 
     return NextResponse.json({
       raffle: sanitizeRaffleForAdmin(full!),
-      publishNotice: assignedPassword
-        ? {
-            passwordProtected: true,
-            password: assignedPassword,
-          }
-        : null,
     });
   }
 

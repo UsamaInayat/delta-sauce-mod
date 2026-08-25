@@ -29,11 +29,16 @@ export default function SavedRafflesPage() {
   }, []);
 
   async function publish(id: string) {
-    await fetch(`/api/admin/raffles/${id}`, {
+    const res = await fetch(`/api/admin/raffles/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "publish" }),
     });
+    const data = await res.json();
+    if (!res.ok) {
+      window.alert(data.error ?? "Publish failed.");
+      return;
+    }
     window.location.reload();
   }
 

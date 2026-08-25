@@ -7,7 +7,6 @@ import {
   rafflePasswordSessionCookieOptions,
   verifyRafflePasswordSessionToken,
 } from "@/lib/auth/raffle-password-token";
-import { prisma } from "@/lib/prisma";
 import {
   isRafflePasswordActive,
   type RafflePasswordInput,
@@ -100,33 +99,14 @@ export function setRafflePasswordSessionOnResponse(
   return response;
 }
 
-export async function publishPasswordProtectedRaffle(raffleId: string) {
-  const { encryptGatePassword } = await import("@/lib/auth/gate-crypto");
-  const { assignPasswordWordForRaffle } = await import("@/lib/raffles/password-pool");
-
-  const pick = await assignPasswordWordForRaffle(raffleId);
-  const passwordUpdatedAt = new Date();
-
-  await prisma.raffle.update({
-    where: { id: raffleId },
-    data: {
-      passwordEnc: encryptGatePassword(pick.word),
-      passwordUpdatedAt,
-    },
-  });
-
-  return { word: pick.word, passwordUpdatedAt };
-}
-
 export function sanitizeRaffleForAdmin<T extends Record<string, unknown>>(raffle: T) {
-  const { passwordEnc: _enc, ...rest } = raffle;
+  const { passwordEnc: _enc, password: _plain, ...rest } = raffle;
   return rest;
 }
 
 export function sanitizeRaffleForPublic<T extends Record<string, unknown>>(raffle: T) {
   const {
     passwordEnc: _enc,
-    passwordWordId: _wordId,
     passwordUpdatedAt: _updated,
     ...rest
   } = raffle;

@@ -5,6 +5,7 @@ import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { fetchOpenseaNft } from "@/lib/blockchain/holdings";
 import { sanitizeRaffleForAdmin } from "@/lib/auth/raffle-password";
+import { buildRafflePasswordUpdate } from "@/lib/raffles/raffle-password-fields";
 
 function slugify(value: string) {
   return value
@@ -49,6 +50,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Title required" }, { status: 400 });
   }
 
+  const passwordFields = buildRafflePasswordUpdate(body, false);
+  if (
+    passwordFields.passwordProtected &&
+    !passwordFields.passwordEnc
+  ) {
+    return NextResponse.json(
+      { error: "Password is required for password-protected raffles." },
+      { status: 400 },
+    );
+  }
+
   let artworkImage = body.artworkImage as string | null;
   let itemName = body.itemName as string | null;
 
@@ -86,7 +98,9 @@ export async function POST(req: NextRequest) {
       spotCap: body.spotCap ? Number(body.spotCap) : null,
       autoFinalize: body.autoFinalize !== false,
       tokenGated: Boolean(body.tokenGated),
-      passwordProtected: Boolean(body.passwordProtected),
+      passwordProtected: passwordFields.passwordProtected,
+      passwordEnc: passwordFields.passwordEnc ?? null,
+      passwordUpdatedAt: passwordFields.passwordUpdatedAt ?? null,
       itemName,
       openseaUrl: body.openseaUrl ?? null,
       artworkImage,
@@ -106,5 +120,5 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ raffle });
+  return NextResponse.json({ raffle: sanitizeRaffleForAdmin(raffle) });
 }

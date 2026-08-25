@@ -17,6 +17,6 @@ export async function processDueRaffles() {
     }
   }
 
-  const { releaseExpiredRafflePasswords } = await import("@/lib/raffles/password-pool");
-  await releaseExpiredRafflePasswords(now).catch(() => null);
+  const { clearExpiredRafflePasswords } = await import("@/lib/raffles/raffle-password-cleanup");
+  await clearExpiredRafflePasswords(now).catch(() => null);
 }

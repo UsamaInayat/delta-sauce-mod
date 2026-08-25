@@ -5,9 +5,11 @@ import { COOKIE, gateTokenLooksValid } from "@/lib/auth/gate-token";
 const PUBLIC_ADMIN = "/admin/login";
 
 function isProtectedRaffleApi(pathname: string) {
-  if (pathname.startsWith("/api/raffles/") && !pathname.startsWith("/api/raffles/gate")) {
-    return true;
+  if (pathname.startsWith("/api/raffles/gate")) return false;
+  if (/^\/api\/raffles\/[^/]+\/(gate\/status|unlock)$/.test(pathname)) {
+    return false;
   }
+  if (pathname.startsWith("/api/raffles/")) return true;
   if (pathname === "/api/ens/resolve") return true;
   return false;
 }
@@ -31,8 +33,12 @@ export function middleware(req: NextRequest) {
   }
 
   if (isProtectedRaffleApi(pathname)) {
-    const gateToken = req.cookies.get(COOKIE)?.value;
-    if (!gateTokenLooksValid(gateToken)) {
+    try {
+      const gateToken = req.cookies.get(COOKIE)?.value;
+      if (!gateTokenLooksValid(gateToken)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

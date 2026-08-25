@@ -67,6 +67,7 @@ export default function RaffleDetailPage({
   const [gateError, setGateError] = useState<string | null>(null);
   const [gateSubmitting, setGateSubmitting] = useState(false);
   const [gateShake, setGateShake] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     void params.then((p) => setSlug(p.slug));
@@ -76,17 +77,26 @@ export default function RaffleDetailPage({
     if (!slug) return;
 
     setGateChecking(true);
+    setLoadError(null);
     void fetch(`/api/raffles/${slug}/gate/status`)
       .then(async (res) => {
         if (res.status === 401) {
           router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
           return;
         }
-        if (!res.ok) return;
+        if (!res.ok) {
+          setGateRequired(false);
+          setGateUnlocked(true);
+          return;
+        }
         const data = (await res.json()) as { required?: boolean; unlocked?: boolean };
         const required = data.required === true;
         setGateRequired(required);
         setGateUnlocked(!required || data.unlocked === true);
+      })
+      .catch(() => {
+        setGateRequired(false);
+        setGateUnlocked(true);
       })
       .finally(() => setGateChecking(false));
   }, [slug, router]);
@@ -108,6 +118,7 @@ export default function RaffleDetailPage({
 
   const load = useCallback(async () => {
     if (!slug || !gateUnlocked) return;
+    setLoadError(null);
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
     const res = await fetch(`/api/raffles/${slug}?wallet=${encodeURIComponent(storedWallet)}`);
     if (res.status === 401) {
@@ -118,7 +129,10 @@ export default function RaffleDetailPage({
       router.replace("/raffles");
       return;
     }
-    if (!res.ok) return;
+    if (!res.ok) {
+      setLoadError("Could not load this raffle. Try again.");
+      return;
+    }
     const data = (await res.json()) as { raffle: RafflePayload };
     setRaffle(data.raffle);
     if (data.raffle.userEntry) {
@@ -275,7 +289,7 @@ export default function RaffleDetailPage({
     };
   }, [raffle]);
 
-  if (gateChecking || (gateUnlocked && !raffle)) {
+  if (gateChecking) {
     return (
       <DeltaShell
         breadcrumb={[{ label: "Raffles", href: "/raffles" }]}
@@ -317,10 +331,10 @@ export default function RaffleDetailPage({
     return (
       <DeltaShell
         breadcrumb={[{ label: "Raffles", href: "/raffles" }]}
-        pageTitle="Loading…"
+        pageTitle={loadError ? "Error" : "Loading…"}
         taskLabel="RAFFLE.EXE"
       >
-        <p className="al-empty-copy">Loading raffle…</p>
+        <p className="al-empty-copy">{loadError ?? "Loading raffle…"}</p>
       </DeltaShell>
     );
   }
