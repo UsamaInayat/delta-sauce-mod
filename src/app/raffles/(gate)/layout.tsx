@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { RaffleGateShell } from "@/components/delta/raffle-gate-shell";
 import { requireRaffleGate, RaffleGateError } from "@/lib/auth/raffle-gate";
 
 export default async function RaffleGateLayout({
@@ -15,5 +16,5 @@ export default async function RaffleGateLayout({
     throw error;
   }
 
-  return children;
+  return <RaffleGateShell>{children}</RaffleGateShell>;
 }

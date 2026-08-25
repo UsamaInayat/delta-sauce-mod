@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { DeltaRaffleDesktopIcons } from "@/components/delta/delta-raffle-desktop-icons";
 
 export type RaffleFolder = {
   slug: string;
@@ -54,18 +55,14 @@ export function DeltaRaffleDesktop({ raffles }: { raffles: RaffleFolder[] }) {
     return states[raffle.slug] ?? "lost";
   }
 
-  if (raffles.length === 0) {
-    return (
-      <div className="al-raffle-desktop">
+  return (
+    <div className="al-raffle-desktop">
+      <DeltaRaffleDesktopIcons />
+      {raffles.length === 0 ? (
         <p className="al-empty-copy al-desktop-empty">
           No live raffles right now. Check back soon.
         </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="al-raffle-desktop">
+      ) : (
       <div className="al-raffle-folders" role="list">
         {raffles.map((raffle) => {
           const visual = visualFor(raffle);
@@ -82,6 +79,7 @@ export function DeltaRaffleDesktop({ raffles }: { raffles: RaffleFolder[] }) {
           );
         })}
       </div>
+      )}
       <p className="al-back-link al-desktop-back">
         <Link href="https://deltasauceart.com/">← deltasauceart.com</Link>
       </p>
