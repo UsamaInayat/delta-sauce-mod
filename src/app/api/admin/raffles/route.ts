@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { fetchOpenseaNft } from "@/lib/blockchain/holdings";
+import { sanitizeRaffleForAdmin } from "@/lib/auth/raffle-password";
 
 function slugify(value: string) {
   return value
@@ -26,7 +27,9 @@ export async function GET() {
       _count: { select: { entries: true } },
     },
   });
-  return NextResponse.json({ raffles });
+  return NextResponse.json({
+    raffles: raffles.map((raffle) => sanitizeRaffleForAdmin(raffle)),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
       spotCap: body.spotCap ? Number(body.spotCap) : null,
       autoFinalize: body.autoFinalize !== false,
       tokenGated: Boolean(body.tokenGated),
+      passwordProtected: Boolean(body.passwordProtected),
       itemName,
       openseaUrl: body.openseaUrl ?? null,
       artworkImage,

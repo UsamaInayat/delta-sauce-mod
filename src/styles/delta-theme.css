@@ -1802,6 +1802,22 @@
   margin-top: 8px !important;
 }
 
+.delta-admin-shell .al-admin-publish-notice {
+  margin-top: 12px !important;
+}
+
+.delta-admin-shell .al-admin-password-reveal {
+  margin: 8px 0 !important;
+  padding: 8px 12px !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  background: #ffffcc !important;
+  border: 2px inset #808080 !important;
+  color: #000 !important;
+}
+
 .delta-admin-shell .al-admin-section {
   margin: 20px 0 !important;
   padding-top: 12px !important;

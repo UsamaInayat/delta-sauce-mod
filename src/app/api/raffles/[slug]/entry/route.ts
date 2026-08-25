@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
+import { enforceRafflePasswordApi } from "@/lib/auth/raffle-password";
 import { prisma } from "@/lib/prisma";
 import { cancelEntry, submitEntry } from "@/lib/raffles/entry";
 
@@ -17,6 +18,9 @@ export async function POST(
   if (!raffle) {
     return NextResponse.json({ error: "Raffle not found" }, { status: 404 });
   }
+
+  const passwordResponse = await enforceRafflePasswordApi(raffle, slug);
+  if (passwordResponse) return passwordResponse;
 
   try {
     const entry = await submitEntry({
@@ -47,6 +51,9 @@ export async function DELETE(
   if (!raffle) {
     return NextResponse.json({ error: "Raffle not found" }, { status: 404 });
   }
+
+  const passwordResponse = await enforceRafflePasswordApi(raffle, slug);
+  if (passwordResponse) return passwordResponse;
 
   try {
     const entry = await cancelEntry({

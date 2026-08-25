@@ -1,5 +1,6 @@
 import { PrismaClient, RaffleChain } from "@prisma/client";
 import { encryptGatePassword } from "../src/lib/auth/gate-crypto";
+import { ensurePasswordWordPoolSeeded } from "../src/lib/raffles/password-pool";
 
 const prisma = new PrismaClient();
 
@@ -50,6 +51,10 @@ async function main() {
     });
     console.log("Seeded raffle gate password from RAFFLE_GATE_PASSWORD");
   }
+
+  await ensurePasswordWordPoolSeeded();
+  const wordCount = await prisma.rafflePasswordWord.count();
+  console.log(`Seeded ${wordCount} raffle password dictionary words`);
 }
 
 main()

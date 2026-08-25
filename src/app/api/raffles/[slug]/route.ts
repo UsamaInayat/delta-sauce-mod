@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
+import { enforceRafflePasswordApi } from "@/lib/auth/raffle-password";
 import { RaffleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getRaffleLifecycleLabel,
   isRaffleEnterable,
+  isRafflePasswordActive,
   isRafflePubliclyVisible,
 } from "@/lib/raffles/lifecycle";
 import { lookupEntryResult } from "@/lib/raffles/entry";
@@ -34,6 +36,9 @@ export async function GET(
   if (!isRafflePubliclyVisible(raffle)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const passwordResponse = await enforceRafflePasswordApi(raffle, slug);
+  if (passwordResponse) return passwordResponse;
 
   const lifecycle = getRaffleLifecycleLabel(raffle);
   let userEntry = null;
@@ -78,6 +83,7 @@ export async function GET(
       winnerCount: raffle.winnerCount,
       spotCap: raffle.spotCap,
       tokenGated: raffle.tokenGated,
+      passwordProtected: isRafflePasswordActive(raffle),
       lifecycle,
       enterable: isRaffleEnterable(raffle),
       collections: raffle.collections.map((rc) => ({

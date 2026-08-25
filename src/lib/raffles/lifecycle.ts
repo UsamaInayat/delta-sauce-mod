@@ -56,6 +56,20 @@ export function isRaffleListedOnMainPage(
   return now.getTime() - finalizedAt.getTime() <= FINALIZED_MAIN_LIST_MS;
 }
 
+export type RafflePasswordInput = RaffleLifecycleInput & {
+  passwordProtected?: boolean;
+  passwordEnc?: string | null;
+  passwordUpdatedAt?: Date | null;
+};
+
+export function isRafflePasswordActive(
+  raffle: RafflePasswordInput,
+  now: Date = new Date(),
+) {
+  if (!raffle.passwordProtected || !raffle.passwordEnc) return false;
+  return isRaffleListedOnMainPage(raffle, now);
+}
+
 export function isRaffleLockedFromEdits(
   raffle: RaffleLifecycleInput,
   now: Date = new Date(),

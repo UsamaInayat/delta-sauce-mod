@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+import {
+  publishPasswordProtectedRaffle,
+  sanitizeRaffleForAdmin,
+} from "@/lib/auth/raffle-password";
+import { RafflePasswordPoolError } from "@/lib/raffles/password-pool";
 
 function parseOptionalDate(value: unknown) {
   return parseStoredDateTime(value);
@@ -34,6 +39,7 @@ function buildUpdateData(body: Record<string, unknown>) {
         : null,
     autoFinalize: body.autoFinalize !== false,
     tokenGated: Boolean(body.tokenGated),
+    passwordProtected: Boolean(body.passwordProtected),
     itemName: (body.itemName as string | null | undefined) ?? null,
     openseaUrl: (body.openseaUrl as string | null | undefined) ?? null,
     artworkCollection:
@@ -65,10 +71,10 @@ export async function GET(
   }
 
   return NextResponse.json({
-    raffle: {
-      ...raffle,
-      lifecycle: getRaffleLifecycleLabel(raffle),
-    },
+    raffle: sanitizeRaffleForAdmin({
+      ...raffle!,
+      lifecycle: getRaffleLifecycleLabel(raffle!),
+    }),
   });
 }
 
@@ -91,9 +97,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid ends at time" }, { status: 400 });
   }
 
+  const existing = await prisma.raffle.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const updateData = buildUpdateData(body);
+  if (existing.status !== RaffleStatus.DRAFT) {
+    delete (updateData as { passwordProtected?: boolean }).passwordProtected;
+  }
+
   await prisma.raffle.update({
     where: { id },
-    data: buildUpdateData(body),
+    data: updateData,
   });
 
   if (Array.isArray(body.collectionIds)) {
@@ -116,7 +132,9 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json({ raffle });
+  return NextResponse.json({
+    raffle: sanitizeRaffleForAdmin(raffle!),
+  });
 }
 
 export async function POST(
@@ -138,13 +156,38 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const raffle = await prisma.raffle.update({
-      where: { id },
-      data: {
-        status: RaffleStatus.PUBLISHED,
-        publishedAt: new Date(),
-      },
-    });
+    if (existing.status !== RaffleStatus.DRAFT) {
+      return NextResponse.json(
+        { error: "Only draft raffles can be published." },
+        { status: 400 },
+      );
+    }
+
+    let assignedPassword: string | null = null;
+
+    try {
+      await prisma.raffle.update({
+        where: { id },
+        data: {
+          status: RaffleStatus.PUBLISHED,
+          publishedAt: new Date(),
+        },
+      });
+
+      if (existing.passwordProtected) {
+        const result = await publishPasswordProtectedRaffle(id);
+        assignedPassword = result.word;
+      }
+    } catch (error) {
+      if (error instanceof RafflePasswordPoolError) {
+        await prisma.raffle.update({
+          where: { id },
+          data: { status: RaffleStatus.DRAFT, publishedAt: null },
+        });
+        return NextResponse.json({ error: error.message }, { status: 503 });
+      }
+      throw error;
+    }
 
     const full = await prisma.raffle.findUnique({
       where: { id },
@@ -154,7 +197,15 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ raffle: full });
+    return NextResponse.json({
+      raffle: sanitizeRaffleForAdmin(full!),
+      publishNotice: assignedPassword
+        ? {
+            passwordProtected: true,
+            password: assignedPassword,
+          }
+        : null,
+    });
   }
 
   if (action === "finalize") {

@@ -22,8 +22,8 @@ export function getClientIp(headers: Headers) {
   return headers.get("x-real-ip")?.trim() || "unknown";
 }
 
-export function checkGateRateLimit(ip: string) {
-  const key = hashKey(ip);
+export function checkGateRateLimit(ip: string, scope = "platform") {
+  const key = hashKey(`${scope}:${ip}`);
   const now = Date.now();
   const bucket = buckets.get(key);
 
@@ -42,8 +42,8 @@ export function checkGateRateLimit(ip: string) {
   return { allowed: true, retryAfterSec: 0 };
 }
 
-export function recordGateFailure(ip: string) {
-  const key = hashKey(ip);
+export function recordGateFailure(ip: string, scope = "platform") {
+  const key = hashKey(`${scope}:${ip}`);
   const now = Date.now();
   const bucket = buckets.get(key);
 
@@ -56,6 +56,6 @@ export function recordGateFailure(ip: string) {
   buckets.set(key, bucket);
 }
 
-export function clearGateRateLimit(ip: string) {
-  buckets.delete(hashKey(ip));
+export function clearGateRateLimit(ip: string, scope = "platform") {
+  buckets.delete(hashKey(`${scope}:${ip}`));
 }

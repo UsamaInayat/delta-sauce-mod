@@ -16,4 +16,7 @@ export async function processDueRaffles() {
       await finalizeRaffle(raffle.id).catch(() => null);
     }
   }
+
+  const { releaseExpiredRafflePasswords } = await import("@/lib/raffles/password-pool");
+  await releaseExpiredRafflePasswords(now).catch(() => null);
 }

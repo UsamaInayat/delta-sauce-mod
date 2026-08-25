@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { DeltaReadme } from "@/components/delta/delta-readme";
 import { DeltaForm, type DeltaFormResult } from "@/components/delta/delta-form";
 import { DeltaWindow } from "@/components/delta/delta-window";
+import { MacGateDialog } from "@/components/delta/mac-gate-dialog";
 import {
   isValidWalletOrEns,
   isValidXHandle,
@@ -59,17 +60,58 @@ export default function RaffleDetailPage({
   const [walletError, setWalletError] = useState<string>();
   const [xError, setXError] = useState<string>();
   const [countdown, setCountdown] = useState("24:00:00");
+  const [gateChecking, setGateChecking] = useState(true);
+  const [gateRequired, setGateRequired] = useState(false);
+  const [gateUnlocked, setGateUnlocked] = useState(false);
+  const [gatePassword, setGatePassword] = useState("");
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [gateSubmitting, setGateSubmitting] = useState(false);
+  const [gateShake, setGateShake] = useState(false);
 
   useEffect(() => {
     void params.then((p) => setSlug(p.slug));
   }, [params]);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     if (!slug) return;
+
+    setGateChecking(true);
+    void fetch(`/api/raffles/${slug}/gate/status`)
+      .then(async (res) => {
+        if (res.status === 401) {
+          router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+          return;
+        }
+        if (!res.ok) return;
+        const data = (await res.json()) as { required?: boolean; unlocked?: boolean };
+        const required = data.required === true;
+        setGateRequired(required);
+        setGateUnlocked(!required || data.unlocked === true);
+      })
+      .finally(() => setGateChecking(false));
+  }, [slug, router]);
+
+  const handleUnauthorized = useCallback(
+    async (res: Response) => {
+      const data = (await res.json().catch(() => ({}))) as { code?: string };
+      if (data.code === "RAFFLE_PASSWORD_REQUIRED") {
+        setGateRequired(true);
+        setGateUnlocked(false);
+        setRaffle(null);
+        return true;
+      }
+      router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+      return true;
+    },
+    [router, slug],
+  );
+
+  const load = useCallback(async () => {
+    if (!slug || !gateUnlocked) return;
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
     const res = await fetch(`/api/raffles/${slug}?wallet=${encodeURIComponent(storedWallet)}`);
     if (res.status === 401) {
-      router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+      await handleUnauthorized(res);
       return;
     }
     if (res.status === 404) {
@@ -85,11 +127,38 @@ export default function RaffleDetailPage({
     } else if (storedWallet) {
       setWallet(storedWallet);
     }
-  }, [slug, router]);
+  }, [slug, gateUnlocked, handleUnauthorized]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function handleGateSubmit(event: FormEvent) {
+    event.preventDefault();
+    setGateError(null);
+    setGateSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/raffles/${slug}/unlock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: gatePassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setGateError(data.error ?? "Sorry, that password is incorrect.");
+        setGateShake(true);
+        window.setTimeout(() => setGateShake(false), 450);
+        return;
+      }
+
+      setGateUnlocked(true);
+      setGatePassword("");
+    } finally {
+      setGateSubmitting(false);
+    }
+  }
 
   useEffect(() => {
     if (!raffle?.endsAt) return;
@@ -138,7 +207,7 @@ export default function RaffleDetailPage({
       });
       const data = await res.json();
       if (res.status === 401) {
-        router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+        await handleUnauthorized(res);
         return;
       }
       if (!res.ok) {
@@ -168,7 +237,7 @@ export default function RaffleDetailPage({
       });
       const data = await res.json();
       if (res.status === 401) {
-        router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+        await handleUnauthorized(res);
         return;
       }
       if (!res.ok) {
@@ -205,6 +274,44 @@ export default function RaffleDetailPage({
       eligibleCollections: raffle.collections.map((c) => c.name),
     };
   }, [raffle]);
+
+  if (gateChecking || (gateUnlocked && !raffle)) {
+    return (
+      <DeltaShell
+        breadcrumb={[{ label: "Raffles", href: "/raffles" }]}
+        pageTitle="Loading…"
+        taskLabel="RAFFLE.EXE"
+      >
+        <p className="al-empty-copy">Loading raffle…</p>
+      </DeltaShell>
+    );
+  }
+
+  if (gateRequired && !gateUnlocked) {
+    return (
+      <DeltaShell
+        breadcrumb={[
+          { label: "Raffles", href: "/raffles" },
+          { label: "Unlock" },
+        ]}
+        pageTitle="Unlock Raffle"
+        taskLabel="RAFFLE.EXE"
+        showDesk={false}
+      >
+        <div className="al-gate-stage">
+          <MacGateDialog
+            shake={gateShake}
+            configured
+            password={gatePassword}
+            error={gateError}
+            submitting={gateSubmitting}
+            onPasswordChange={setGatePassword}
+            onSubmit={handleGateSubmit}
+          />
+        </div>
+      </DeltaShell>
+    );
+  }
 
   if (!raffle) {
     return (

@@ -5,8 +5,6 @@ import { DeltaRecycleBin } from "@/components/delta/delta-recycle-bin";
 import { DeltaStackerGame } from "@/components/delta/delta-stacker-game";
 import { DeltaVideosPlayer } from "@/components/delta/delta-videos-player";
 
-const ALLOWLIST_URL = "https://deltasauceart.com/binary/allowlist";
-
 export function DeltaRaffleDesktopIcons() {
   const [binOpen, setBinOpen] = useState(false);
   const [videosOpen, setVideosOpen] = useState(false);
@@ -29,17 +27,6 @@ export function DeltaRaffleDesktopIcons() {
           <span className="al-icon-img al-icon-bin" aria-hidden="true" />
           <span className="al-icon-label">Recycle Bin</span>
         </button>
-
-        <a
-          className="al-icon al-selected"
-          href={ALLOWLIST_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="The Rolodex allowlist"
-        >
-          <span className="al-icon-img al-icon-exe-rolodex" aria-hidden="true" />
-          <span className="al-icon-label">THEROLODEX.EXE</span>
-        </a>
 
         <button type="button" className="al-icon" title="VIDEOS" onClick={() => setVideosOpen(true)}>
           <span className="al-icon-img al-icon-folderimg" aria-hidden="true" />

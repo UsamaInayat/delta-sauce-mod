@@ -41,6 +41,7 @@ type LoadedRaffle = {
   winnerCount: number | null;
   autoFinalize: boolean;
   tokenGated: boolean;
+  passwordProtected: boolean;
   collections: Array<{ collectionId: string }>;
   itemName: string | null;
   openseaUrl: string | null;
@@ -60,6 +61,7 @@ function raffleToForm(raffle: LoadedRaffle) {
     winnerCount: String(raffle.winnerCount ?? 1),
     autoFinalize: raffle.autoFinalize !== false,
     tokenGated: Boolean(raffle.tokenGated),
+    passwordProtected: Boolean(raffle.passwordProtected),
     collectionIds: (raffle.collections ?? []).map((c) => c.collectionId),
     itemName: raffle.itemName ?? "",
     openseaUrl: raffle.openseaUrl ?? "",
@@ -84,6 +86,7 @@ export default function AdminRaffleForm({
   const [collections, setCollections] = useState<Collection[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [publishNotice, setPublishNotice] = useState<{ password: string } | null>(null);
   const [raffleStatus, setRaffleStatus] = useState<string>("DRAFT");
 
   const [form, setForm] = useState({
@@ -98,6 +101,7 @@ export default function AdminRaffleForm({
     winnerCount: "1",
     autoFinalize: true,
     tokenGated: false,
+    passwordProtected: false,
     collectionIds: [] as string[],
     itemName: "",
     openseaUrl: "",
@@ -239,6 +243,13 @@ export default function AdminRaffleForm({
 
       const data = await res.json();
       setRaffleStatus(data.raffle?.status ?? "PUBLISHED");
+
+      if (data.publishNotice?.password) {
+        setPublishNotice({ password: data.publishNotice.password });
+        setMessage("");
+        return;
+      }
+
       setMessage("Published.");
       router.push("/admin/raffles");
     } catch (error) {
@@ -249,6 +260,7 @@ export default function AdminRaffleForm({
   }
 
   const isArtwork = form.type === "ARTWORK_GIVEAWAY";
+  const isDraft = raffleStatus === "DRAFT";
 
   return (
     <DeltaAdminShell pageTitle={raffleId ? "Edit Raffle" : "Create Raffle"}>
@@ -471,6 +483,32 @@ export default function AdminRaffleForm({
         ) : null}
 
         <fieldset className="al-admin-fieldset">
+          <legend>Is it password protected?</legend>
+          <button
+            type="button"
+            className={`al-admin-toggle${form.passwordProtected ? " active" : ""}`}
+            disabled={!isDraft}
+            onClick={() => setForm({ ...form, passwordProtected: true })}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            className={`al-admin-toggle${!form.passwordProtected ? " active" : ""}`}
+            disabled={!isDraft}
+            onClick={() => setForm({ ...form, passwordProtected: false })}
+          >
+            No
+          </button>
+        </fieldset>
+        {form.passwordProtected ? (
+          <p className="arena-form-note">
+            A unique dictionary password is assigned automatically when you publish.
+            You will see it once in the confirmation notice.
+          </p>
+        ) : null}
+
+        <fieldset className="al-admin-fieldset">
           <legend>Should the raffle end automatically?</legend>
           <button
             type="button"
@@ -487,6 +525,28 @@ export default function AdminRaffleForm({
             No
           </button>
         </fieldset>
+
+        {publishNotice ? (
+          <div className="arena-result show ok al-admin-publish-notice">
+            <span className="al-msgicon" aria-hidden="true" />
+            <div>
+              <strong>Password-protected raffle published.</strong>
+              <p>Share this password with allowed entrants only:</p>
+              <p className="al-admin-password-reveal">{publishNotice.password}</p>
+              <p className="arena-form-note">
+                This password is shown once. It stays encrypted in the database and is
+                never exposed on public raffle pages or APIs.
+              </p>
+              <button
+                type="button"
+                className="al-admin-btn primary"
+                onClick={() => router.push("/admin/raffles")}
+              >
+                Back to raffles
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {message ? <p className="al-admin-msg">{message}</p> : null}
 
