@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { COOKIE, gateTokenLooksValid } from "@/lib/auth/gate-token";
 
 const PUBLIC_ADMIN = "/admin/login";
-
-function raffleUnlockPath(pathname: string, search: string) {
-  const unlock = new URL("/raffles/unlock", "http://local");
-  unlock.searchParams.set("next", `${pathname}${search}`);
-  return `${unlock.pathname}${unlock.search}`;
-}
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
@@ -30,31 +23,16 @@ export function middleware(req: NextRequest) {
 
   if (
     pathname.startsWith("/raffles") &&
-    pathname !== "/raffles/unlock" &&
-    !pathname.startsWith("/api/")
+    !pathname.startsWith("/raffles/unlock")
   ) {
-    try {
-      const gateToken = req.cookies.get(COOKIE)?.value;
-      if (!gateTokenLooksValid(gateToken)) {
-        return NextResponse.redirect(
-          new URL(raffleUnlockPath(pathname, search), req.url),
-        );
-      }
-    } catch {
-      return NextResponse.redirect(
-        new URL(raffleUnlockPath(pathname, search), req.url),
-      );
-    }
+    const response = NextResponse.next();
+    response.headers.set("x-raffle-next", `${pathname}${search}`);
+    return response;
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/raffles/:path*",
-    "/api/raffles/:path*",
-    "/api/ens/resolve",
-  ],
+  matcher: ["/admin/:path*", "/raffles/:path*"],
 };

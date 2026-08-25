@@ -10,5 +10,12 @@ export async function GET() {
   );
   const unlocked = configured ? await isRaffleGateUnlocked() : false;
 
-  return NextResponse.json({ configured, unlocked });
+  return NextResponse.json(
+    { configured, unlocked },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    },
+  );
 }

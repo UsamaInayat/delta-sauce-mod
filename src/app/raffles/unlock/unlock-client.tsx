@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { MacGateDialog } from "@/components/delta/mac-gate-dialog";
@@ -17,6 +18,7 @@ export default function RaffleUnlockPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [configured, setConfigured] = useState(true);
+  const [alreadyUnlocked, setAlreadyUnlocked] = useState(false);
   const [shake, setShake] = useState(false);
 
   const nextPath = normalizeNextPath(searchParams.get("next"));
@@ -33,12 +35,10 @@ export default function RaffleUnlockPage() {
           unlocked?: boolean;
         };
         setConfigured(data.configured !== false);
-        if (data.unlocked === true) {
-          window.location.replace(nextPath);
-        }
+        setAlreadyUnlocked(data.unlocked === true);
       })
       .catch(() => setConfigured(false));
-  }, [nextPath]);
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,15 +74,24 @@ export default function RaffleUnlockPage() {
       showDesk={false}
     >
       <div className="al-gate-stage">
-        <MacGateDialog
-          shake={shake}
-          configured={configured}
-          password={password}
-          error={error}
-          submitting={submitting}
-          onPasswordChange={setPassword}
-          onSubmit={handleSubmit}
-        />
+        {alreadyUnlocked ? (
+          <div className="al-dialog-body">
+            <p className="al-empty-copy">You are already unlocked.</p>
+            <Link href={nextPath} className="al-admin-btn primary">
+              Continue to raffles
+            </Link>
+          </div>
+        ) : (
+          <MacGateDialog
+            shake={shake}
+            configured={configured}
+            password={password}
+            error={error}
+            submitting={submitting}
+            onPasswordChange={setPassword}
+            onSubmit={handleSubmit}
+          />
+        )}
       </div>
     </DeltaShell>
   );
