@@ -4,7 +4,7 @@ import { DeltaRaffleDesktop } from "@/components/delta/delta-raffle-desktop";
 import { prisma } from "@/lib/prisma";
 import {
   getRaffleLifecycleLabel,
-  isRafflePubliclyVisible,
+  isRaffleListedOnMainPage,
 } from "@/lib/raffles/lifecycle";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export default async function RafflesPage() {
   });
 
   const folders = raffles
-    .filter((r) => isRafflePubliclyVisible(r))
+    .filter((r) => isRaffleListedOnMainPage(r))
     .map((r) => ({
       slug: r.slug,
       title: r.title,

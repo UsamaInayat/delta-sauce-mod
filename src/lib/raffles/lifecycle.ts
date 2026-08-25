@@ -11,7 +11,10 @@ export type RaffleLifecycleInput = {
   status: RaffleStatus;
   startsAt?: Date | null;
   endsAt?: Date | null;
+  closedAt?: Date | null;
 };
+
+const FINALIZED_MAIN_LIST_MS = 4 * 24 * 60 * 60 * 1000;
 
 export function getRaffleLifecycleLabel(
   raffle: RaffleLifecycleInput,
@@ -37,6 +40,20 @@ export function isRafflePubliclyVisible(
 ) {
   const label = getRaffleLifecycleLabel(raffle, now);
   return label === "LIVE" || label === "ENDED" || label === "FINALIZED";
+}
+
+export function isRaffleListedOnMainPage(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+) {
+  const label = getRaffleLifecycleLabel(raffle, now);
+  if (label === "LIVE" || label === "ENDED") return true;
+  if (label !== "FINALIZED") return false;
+
+  const finalizedAt = raffle.closedAt ?? raffle.endsAt;
+  if (!finalizedAt) return true;
+
+  return now.getTime() - finalizedAt.getTime() <= FINALIZED_MAIN_LIST_MS;
 }
 
 export function isRaffleLockedFromEdits(

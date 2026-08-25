@@ -61,38 +61,36 @@ export default function AdminWinnersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  function exportWinnersCsv() {
+  function exportRowWinners(row: WinnerRow) {
     const headers = ["raffle", "type", "closed_at", "wallet", "x_handle"];
-    const lines = rows.flatMap((row) =>
-      row.winners.map((winner) =>
-        [
-          csvEscape(row.title),
-          csvEscape(row.type),
-          csvEscape(row.endsAt ? formatLocalDateTime(parseStoredDateTime(row.endsAt)) : ""),
-          csvEscape(formatWallet(winner)),
-          csvEscape(formatHandle(winner)),
-        ].join(","),
-      ),
+    const lines = row.winners.map((winner) =>
+      [
+        csvEscape(row.title),
+        csvEscape(row.type),
+        csvEscape(row.endsAt ? formatLocalDateTime(parseStoredDateTime(row.endsAt)) : ""),
+        csvEscape(formatWallet(winner)),
+        csvEscape(formatHandle(winner)),
+      ].join(","),
     );
-    downloadCsv("winners.csv", headers, lines);
+    const slug = row.slug.replace(/[^a-z0-9-]+/gi, "-").replace(/^-|-$/g, "") || "raffle";
+    downloadCsv(`${slug}-winners.csv`, headers, lines);
   }
 
-  function exportEntrantsCsv() {
+  function exportRowEntrants(row: WinnerRow) {
     const headers = ["raffle", "type", "closed_at", "wallet", "x_handle", "status", "entered_at"];
-    const lines = rows.flatMap((row) =>
-      row.entrants.map((entrant) =>
-        [
-          csvEscape(row.title),
-          csvEscape(row.type),
-          csvEscape(row.endsAt ? formatLocalDateTime(parseStoredDateTime(row.endsAt)) : ""),
-          csvEscape(formatWallet(entrant)),
-          csvEscape(formatHandle(entrant)),
-          csvEscape(entrant.status),
-          csvEscape(formatLocalDateTime(parseStoredDateTime(entrant.createdAt))),
-        ].join(","),
-      ),
+    const lines = row.entrants.map((entrant) =>
+      [
+        csvEscape(row.title),
+        csvEscape(row.type),
+        csvEscape(row.endsAt ? formatLocalDateTime(parseStoredDateTime(row.endsAt)) : ""),
+        csvEscape(formatWallet(entrant)),
+        csvEscape(formatHandle(entrant)),
+        csvEscape(entrant.status),
+        csvEscape(formatLocalDateTime(parseStoredDateTime(entrant.createdAt))),
+      ].join(","),
     );
-    downloadCsv("entrants.csv", headers, lines);
+    const slug = row.slug.replace(/[^a-z0-9-]+/gi, "-").replace(/^-|-$/g, "") || "raffle";
+    downloadCsv(`${slug}-entrants.csv`, headers, lines);
   }
 
   return (
@@ -100,24 +98,6 @@ export default function AdminWinnersPage() {
       <DeltaAdminWindow title="WINNERS.EXE" wide>
         <div className="al-admin-toolbar">
           <h1 className="arena-form-title">Winners</h1>
-          <div className="al-admin-toolbar-actions">
-            <button
-              type="button"
-              className="al-admin-btn"
-              onClick={exportWinnersCsv}
-              disabled={loading || rows.length === 0}
-            >
-              Export Winners
-            </button>
-            <button
-              type="button"
-              className="al-admin-btn"
-              onClick={exportEntrantsCsv}
-              disabled={loading || rows.length === 0}
-            >
-              Export Entrants
-            </button>
-          </div>
         </div>
 
         {loading ? (
@@ -132,7 +112,7 @@ export default function AdminWinnersPage() {
                   <th>Raffle</th>
                   <th>Type</th>
                   <th>Closed</th>
-                  <th>Winners</th>
+                  <th>Export</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,18 +126,24 @@ export default function AdminWinnersPage() {
                         : "—"}
                     </td>
                     <td>
-                      {row.winners.length === 0 ? (
-                        "—"
-                      ) : (
-                        <ul className="al-admin-winner-list">
-                          {row.winners.map((winner) => (
-                            <li key={winner.walletAddress}>
-                              {formatWallet(winner)}
-                              {formatHandle(winner) ? ` (${formatHandle(winner)})` : ""}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <div className="al-admin-toolbar-actions">
+                        <button
+                          type="button"
+                          className="al-admin-btn"
+                          onClick={() => exportRowWinners(row)}
+                          disabled={row.winners.length === 0}
+                        >
+                          Export Winners
+                        </button>
+                        <button
+                          type="button"
+                          className="al-admin-btn"
+                          onClick={() => exportRowEntrants(row)}
+                          disabled={row.entrants.length === 0}
+                        >
+                          Export Entrants
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
