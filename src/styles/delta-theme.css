@@ -1688,7 +1688,12 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 10px !important;
+  width: 100% !important;
   max-width: 360px !important;
+}
+
+.delta-admin-shell .al-admin-form .al-admin-btn {
+  align-self: flex-start !important;
 }
 
 .delta-admin-shell .al-admin-label {

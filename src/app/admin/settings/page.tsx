@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
 
   return (
     <DeltaAdminShell pageTitle="Settings">
-      <DeltaAdminWindow title="SETTINGS.PNL" wide>
+      <DeltaAdminWindow title="SETTINGS.PNL">
         <div className="al-admin-toolbar">
           <h1 className="arena-form-title">Settings</h1>
         </div>

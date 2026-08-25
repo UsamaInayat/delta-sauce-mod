@@ -199,6 +199,22 @@ export default function AdminRaffleForm({
     return false;
   }
 
+  function validateRequiredFields() {
+    const title =
+      form.type === "ARTWORK_GIVEAWAY"
+        ? form.itemName.trim()
+        : form.title.trim();
+    if (!title) {
+      setMessage(
+        form.type === "ARTWORK_GIVEAWAY"
+          ? "Item name is required."
+          : "Raffle title is required.",
+      );
+      return false;
+    }
+    return true;
+  }
+
   async function ensureRaffleId(): Promise<string> {
     if (raffleId) {
       await persistRaffle(raffleId);
@@ -213,36 +229,27 @@ export default function AdminRaffleForm({
     if (!res.ok) {
       throw new Error(data.error ?? "Save failed");
     }
-    const id = data.raffle.id as string;
-    router.replace(`/admin/raffles/${id}/edit`);
-    return id;
+    const raffle = data.raffle as LoadedRaffle;
+    if (form.passwordProtected && form.password.trim()) {
+      setHasSavedPassword(true);
+    }
+    return raffle.id;
   }
 
   async function save() {
     setSaving(true);
     setMessage("");
-    if (!validatePasswordProtected()) {
+    if (!validateRequiredFields() || !validatePasswordProtected()) {
       setSaving(false);
       return;
     }
     try {
       if (raffleId) {
         await persistRaffle(raffleId);
-        router.push("/admin/raffles");
       } else {
-        const res = await fetch("/api/admin/raffles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildPayload()),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setMessage(data.error ?? "Save failed");
-          return;
-        }
-        setMessage("Saved.");
-        router.push(`/admin/raffles/${data.raffle.id}/edit`);
+        await ensureRaffleId();
       }
+      router.replace("/admin/raffles");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Save failed");
     } finally {
@@ -253,7 +260,7 @@ export default function AdminRaffleForm({
   async function publishRaffle() {
     setSaving(true);
     setMessage("");
-    if (!validatePasswordProtected()) {
+    if (!validateRequiredFields() || !validatePasswordProtected()) {
       setSaving(false);
       return;
     }
@@ -271,10 +278,7 @@ export default function AdminRaffleForm({
         return;
       }
 
-      const data = await res.json();
-      setRaffleStatus(data.raffle?.status ?? "PUBLISHED");
-      setMessage("Published.");
-      router.push("/admin/raffles");
+      router.replace("/admin/raffles");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Publish failed");
     } finally {
