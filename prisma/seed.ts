@@ -1,4 +1,5 @@
 import { PrismaClient, RaffleChain } from "@prisma/client";
+import { encryptGatePassword } from "../src/lib/auth/gate-crypto";
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,22 @@ async function main() {
     });
   }
   console.log(`Seeded ${COLLECTIONS.length} collections`);
+
+  const gatePassword = process.env.RAFFLE_GATE_PASSWORD?.trim();
+  if (gatePassword) {
+    await prisma.platformGate.upsert({
+      where: { id: "default" },
+      create: {
+        id: "default",
+        passwordEnc: encryptGatePassword(gatePassword),
+      },
+      update: {
+        passwordEnc: encryptGatePassword(gatePassword),
+        passwordUpdatedAt: new Date(),
+      },
+    });
+    console.log("Seeded raffle gate password from RAFFLE_GATE_PASSWORD");
+  }
 }
 
 main()

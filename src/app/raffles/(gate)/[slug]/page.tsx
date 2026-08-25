@@ -68,6 +68,10 @@ export default function RaffleDetailPage({
     if (!slug) return;
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
     const res = await fetch(`/api/raffles/${slug}?wallet=${encodeURIComponent(storedWallet)}`);
+    if (res.status === 401) {
+      router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+      return;
+    }
     if (res.status === 404) {
       router.replace("/raffles");
       return;
@@ -133,6 +137,10 @@ export default function RaffleDetailPage({
         body: JSON.stringify({ wallet, xHandle }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+        return;
+      }
       if (!res.ok) {
         setResult({ kind: "err", message: data.error ?? "Submission failed." });
         return;
@@ -159,6 +167,10 @@ export default function RaffleDetailPage({
         body: JSON.stringify({ wallet }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        router.replace(`/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`);
+        return;
+      }
       if (!res.ok) {
         setResult({ kind: "err", message: data.error ?? "Could not cancel." });
         return;

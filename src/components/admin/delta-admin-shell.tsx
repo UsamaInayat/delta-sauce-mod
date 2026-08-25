@@ -10,6 +10,7 @@ const ADMIN_TABS = [
   { label: "Winners", href: "/admin/winners" },
   { label: "Snapshots", href: "/admin/snapshots" },
   { label: "Saved Raffles", href: "/admin/raffles" },
+  { label: "Settings", href: "/admin/settings" },
 ] as const;
 
 type DeltaAdminShellProps = {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { RaffleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -12,6 +13,9 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ slug: string }> },
 ) {
+  const gateResponse = await enforceRaffleGateApi();
+  if (gateResponse) return gateResponse;
+
   const { slug } = await ctx.params;
   const walletQuery = req.nextUrl.searchParams.get("wallet") ?? "";
 

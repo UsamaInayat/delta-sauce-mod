@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { prisma } from "@/lib/prisma";
 import { cancelEntry, submitEntry } from "@/lib/raffles/entry";
 
@@ -6,6 +7,9 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ slug: string }> },
 ) {
+  const gateResponse = await enforceRaffleGateApi();
+  if (gateResponse) return gateResponse;
+
   const { slug } = await ctx.params;
   const body = await req.json();
 
@@ -33,6 +37,9 @@ export async function DELETE(
   req: NextRequest,
   ctx: { params: Promise<{ slug: string }> },
 ) {
+  const gateResponse = await enforceRaffleGateApi();
+  if (gateResponse) return gateResponse;
+
   const { slug } = await ctx.params;
   const body = await req.json();
 

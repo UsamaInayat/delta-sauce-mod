@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RaffleStatus } from "@prisma/client";
+import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { prisma } from "@/lib/prisma";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 import { lookupEntryResult } from "@/lib/raffles/entry";
 
 export async function POST(req: NextRequest) {
+  const gateResponse = await enforceRaffleGateApi();
+  if (gateResponse) return gateResponse;
+
   const body = await req.json();
   const wallets = (body.wallets ?? {}) as Record<string, string>;
 
