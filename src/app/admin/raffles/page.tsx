@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
+import { usePoll } from "@/lib/hooks/use-poll";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 
 type SavedRaffle = {
@@ -21,12 +22,22 @@ export default function SavedRafflesPage() {
   const [raffles, setRaffles] = useState<SavedRaffle[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void fetch("/api/admin/raffles")
-      .then((r) => r.json())
-      .then((d) => setRaffles(d.raffles ?? []))
-      .finally(() => setLoading(false));
+  const loadRaffles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/raffles", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setRaffles(data.raffles ?? []);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadRaffles();
+  }, [loadRaffles]);
+
+  usePoll(loadRaffles);
 
   async function publish(id: string) {
     const res = await fetch(`/api/admin/raffles/${id}`, {
@@ -39,16 +50,21 @@ export default function SavedRafflesPage() {
       window.alert(data.error ?? "Publish failed.");
       return;
     }
-    window.location.reload();
+    await loadRaffles();
   }
 
   async function finalize(id: string) {
-    await fetch(`/api/admin/raffles/${id}`, {
+    const res = await fetch(`/api/admin/raffles/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "finalize" }),
     });
-    window.location.reload();
+    if (!res.ok) {
+      const data = await res.json();
+      window.alert(data.error ?? "Finalize failed.");
+      return;
+    }
+    await loadRaffles();
   }
 
   async function removeRaffle(id: string, title: string) {

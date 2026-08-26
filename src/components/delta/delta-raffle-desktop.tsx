@@ -1,54 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DeltaRaffleDesktopIcons } from "@/components/delta/delta-raffle-desktop-icons";
-
-export type RaffleFolder = {
-  slug: string;
-  title: string;
-  lifecycle: string;
-};
+import { gateFetch } from "@/lib/auth/gate-fetch";
+import { usePoll } from "@/lib/hooks/use-poll";
+import type { PublicRaffleFolder } from "@/lib/raffles/public-folders";
 
 type FolderVisual = "live" | "won" | "lost";
 
-export function DeltaRaffleDesktop({ raffles }: { raffles: RaffleFolder[] }) {
+export type RaffleFolder = PublicRaffleFolder;
+
+function foldersEqual(a: RaffleFolder[], b: RaffleFolder[]) {
+  if (a.length !== b.length) return false;
+  return a.every(
+    (folder, index) =>
+      folder.slug === b[index]?.slug &&
+      folder.title === b[index]?.title &&
+      folder.lifecycle === b[index]?.lifecycle,
+  );
+}
+
+export function DeltaRaffleDesktop({
+  raffles: initialRaffles,
+}: {
+  raffles: RaffleFolder[];
+}) {
+  const [raffles, setRaffles] = useState(initialRaffles);
   const [states, setStates] = useState<Record<string, FolderVisual>>({});
 
-  const liveSlugs = useMemo(
-    () =>
-      raffles
-        .filter((r) => r.lifecycle === "LIVE")
-        .map((r) => r.slug)
-        .join(","),
-    [raffles],
-  );
-
-  useEffect(() => {
+  const refreshFolderStates = useCallback(async (folders: RaffleFolder[]) => {
     const wallets: Record<string, string> = {};
-    for (const raffle of raffles) {
+    for (const raffle of folders) {
       const stored = localStorage.getItem(`ds-wallet-${raffle.slug}`);
       if (stored?.trim()) {
         wallets[raffle.slug] = stored.trim();
       }
     }
 
-    void fetch("/api/raffles/folder-states", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallets }),
-    })
-      .then((r) => r.json())
-      .then((d) => setStates((d.states ?? {}) as Record<string, FolderVisual>))
-      .catch(() => {
-        const fallback: Record<string, FolderVisual> = {};
-        for (const raffle of raffles) {
-          fallback[raffle.slug] =
-            raffle.lifecycle === "LIVE" ? "live" : "lost";
-        }
-        setStates(fallback);
+    try {
+      const res = await gateFetch("/api/raffles/folder-states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallets }),
       });
-  }, [raffles, liveSlugs]);
+      if (!res.ok) return;
+      const data = await res.json();
+      setStates((data.states ?? {}) as Record<string, FolderVisual>);
+    } catch {
+      const fallback: Record<string, FolderVisual> = {};
+      for (const raffle of folders) {
+        fallback[raffle.slug] =
+          raffle.lifecycle === "LIVE" ? "live" : "lost";
+      }
+      setStates(fallback);
+    }
+  }, []);
+
+  const refreshRaffles = useCallback(async () => {
+    try {
+      const res = await gateFetch("/api/raffles");
+      if (!res.ok) return;
+      const data = (await res.json()) as { folders?: RaffleFolder[] };
+      const next = data.folders ?? [];
+      setRaffles((prev) => (foldersEqual(prev, next) ? prev : next));
+      await refreshFolderStates(next);
+    } catch {
+      // keep last known list
+    }
+  }, [refreshFolderStates]);
+
+  usePoll(refreshRaffles);
+
+  useEffect(() => {
+    void refreshFolderStates(initialRaffles);
+  }, [initialRaffles, refreshFolderStates]);
 
   function visualFor(raffle: RaffleFolder): FolderVisual {
     if (raffle.lifecycle === "LIVE") return "live";

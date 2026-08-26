@@ -10,6 +10,7 @@ type MacGateDialogProps = {
   shake: boolean;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent) => void;
+  onCancel?: () => void;
 };
 
 export function MacGateDialog({
@@ -20,6 +21,7 @@ export function MacGateDialog({
   shake,
   onPasswordChange,
   onSubmit,
+  onCancel,
 }: MacGateDialogProps) {
   return (
     <div className={`mac-gate-wrap${shake ? " mac-gate-shake" : ""}`}>
@@ -83,6 +85,16 @@ export function MacGateDialog({
             >
               Clear
             </button>
+            {onCancel ? (
+              <button
+                type="button"
+                className="mac-gate-btn"
+                disabled={submitting}
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+            ) : null}
           </div>
         </form>
       </div>

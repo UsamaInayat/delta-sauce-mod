@@ -14,6 +14,7 @@ import {
 } from "@/lib/wallet/validate";
 import { formatLocalDateTime } from "@/lib/datetime/local-input";
 import { gateFetch } from "@/lib/auth/gate-fetch";
+import { usePoll } from "@/lib/hooks/use-poll";
 import {
   hasRafflePasswordTabSession,
   markRafflePasswordTabSession,
@@ -120,7 +121,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     return true;
   }, [slug]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { preserveForm?: boolean }) => {
     if (!slug || !gateUnlocked) return;
     setLoadError(null);
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
@@ -141,6 +142,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     }
     const data = (await res.json()) as { raffle: RafflePayload };
     setRaffle(data.raffle);
+    if (options?.preserveForm) return;
     if (data.raffle.userEntry) {
       setWallet(data.raffle.userEntry.walletEns ?? data.raffle.userEntry.walletAddress);
       setXHandle(data.raffle.userEntry.xHandle.replace(/^@/, ""));
@@ -149,9 +151,15 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     }
   }, [slug, gateUnlocked, handleUnauthorized, router]);
 
+  const pollRaffle = useCallback(async () => {
+    await load({ preserveForm: true });
+  }, [load]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePoll(pollRaffle, undefined, gateUnlocked && !gateChecking);
 
   async function handleGateSubmit(event: FormEvent) {
     event.preventDefault();
@@ -327,6 +335,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
             submitting={gateSubmitting}
             onPasswordChange={setGatePassword}
             onSubmit={handleGateSubmit}
+            onCancel={() => router.push("/raffles")}
           />
         </div>
       </DeltaShell>
