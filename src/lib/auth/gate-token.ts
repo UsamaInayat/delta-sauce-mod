@@ -1,6 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import {
+  GATE_SESSION_TTL_SEC,
+  gateSessionCookieOptions,
+} from "@/lib/auth/gate-session-config";
 
-const MAX_AGE = 60 * 60 * 24 * 7;
 const COOKIE = "ds_raffle_gate";
 
 function secret() {
@@ -16,7 +19,7 @@ function sign(payload: string) {
 }
 
 export function createGateSessionValue(passwordVersion: number) {
-  const exp = Date.now() + MAX_AGE * 1000;
+  const exp = Date.now() + GATE_SESSION_TTL_SEC * 1000;
   const body = `${passwordVersion}.${exp}`;
   const signature = sign(body);
   if (!signature) {
@@ -29,15 +32,7 @@ export function createGateToken(passwordVersion: number) {
   return createGateSessionValue(passwordVersion);
 }
 
-export function gateSessionCookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE,
-    path: "/",
-  };
-}
+export { gateSessionCookieOptions };
 
 export function verifyGateToken(token: string) {
   const parts = token.split(".");
@@ -73,4 +68,4 @@ export function gateTokenLooksValid(token: string | undefined) {
   return verifyGateToken(token) !== null;
 }
 
-export { COOKIE, MAX_AGE };
+export { COOKIE };

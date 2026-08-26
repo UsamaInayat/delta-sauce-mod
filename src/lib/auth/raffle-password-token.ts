@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
-
-const MAX_AGE = 60 * 60 * 24 * 7;
+import {
+  GATE_SESSION_TTL_SEC,
+  gateSessionCookieOptions,
+} from "@/lib/auth/gate-session-config";
 
 function secret() {
   const s = process.env.SESSION_SECRET;
@@ -23,7 +25,7 @@ export function createRafflePasswordSessionValue(
   slug: string,
   passwordVersion: number,
 ) {
-  const exp = Date.now() + MAX_AGE * 1000;
+  const exp = Date.now() + GATE_SESSION_TTL_SEC * 1000;
   const body = `${slug}.${passwordVersion}.${exp}`;
   const signature = sign(body);
   if (!signature) {
@@ -33,13 +35,7 @@ export function createRafflePasswordSessionValue(
 }
 
 export function rafflePasswordSessionCookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE,
-    path: "/",
-  };
+  return gateSessionCookieOptions();
 }
 
 export function verifyRafflePasswordSessionToken(token: string, slug: string) {
