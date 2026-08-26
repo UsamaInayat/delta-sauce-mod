@@ -5,6 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { MacGateDialog } from "@/components/delta/mac-gate-dialog";
 import { gateFetch } from "@/lib/auth/gate-fetch";
+import {
+  hasPlatformGateTabSession,
+  markPlatformGateTabSession,
+} from "@/lib/auth/gate-browser-session";
 
 function normalizeNextPath(path: string | null) {
   if (!path || path === "/") return "/raffles";
@@ -35,6 +39,13 @@ export default function RaffleUnlockPage() {
           unlocked?: boolean;
         };
         setConfigured(data.configured !== false);
+
+        if (data.unlocked === true && !hasPlatformGateTabSession()) {
+          await gateFetch("/api/raffles/gate/lock", { method: "POST" });
+          setAlreadyUnlocked(false);
+          return;
+        }
+
         setAlreadyUnlocked(data.unlocked === true);
       })
       .catch(() => setConfigured(false));
@@ -60,6 +71,7 @@ export default function RaffleUnlockPage() {
         return;
       }
 
+      markPlatformGateTabSession();
       window.location.replace(nextPath);
     } finally {
       setSubmitting(false);
@@ -77,7 +89,11 @@ export default function RaffleUnlockPage() {
         {alreadyUnlocked ? (
           <div className="al-dialog-body">
             <p className="al-empty-copy">You are already unlocked.</p>
-            <a href={nextPath} className="al-admin-btn primary">
+            <a
+              href={nextPath}
+              className="al-admin-btn primary"
+              onClick={() => markPlatformGateTabSession()}
+            >
               Continue to raffles
             </a>
           </div>

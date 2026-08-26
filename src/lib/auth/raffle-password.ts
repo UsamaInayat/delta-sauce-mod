@@ -82,6 +82,16 @@ export async function enforceRafflePasswordApi(
   }
 }
 
+function expiredRafflePasswordCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  };
+}
+
 export async function setRafflePasswordSession(
   slug: string,
   passwordUpdatedAt: Date,
@@ -95,6 +105,15 @@ export async function setRafflePasswordSession(
     rafflePasswordCookieName(slug),
     token,
     rafflePasswordSessionCookieOptions(),
+  );
+}
+
+export async function clearRafflePasswordSession(slug: string) {
+  const jar = await cookies();
+  jar.set(
+    rafflePasswordCookieName(slug),
+    "",
+    expiredRafflePasswordCookieOptions(),
   );
 }
 

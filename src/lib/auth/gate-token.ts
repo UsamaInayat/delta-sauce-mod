@@ -4,7 +4,8 @@ import {
   gateSessionCookieOptions,
 } from "@/lib/auth/gate-session-config";
 
-const COOKIE = "ds_raffle_gate";
+const COOKIE = "ds_raffle_gate_v2";
+const LEGACY_COOKIE = "ds_raffle_gate";
 
 function secret() {
   const s = process.env.SESSION_SECRET;
@@ -68,4 +69,4 @@ export function gateTokenLooksValid(token: string | undefined) {
   return verifyGateToken(token) !== null;
 }
 
-export { COOKIE };
+export { COOKIE, LEGACY_COOKIE };

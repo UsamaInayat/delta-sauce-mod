@@ -9,8 +9,19 @@ import {
   COOKIE,
   createGateSessionValue,
   gateSessionCookieOptions,
+  LEGACY_COOKIE,
   verifyGateToken,
 } from "@/lib/auth/gate-token";
+
+function expiredGateCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  };
+}
 
 export class RaffleGateError extends Error {
   constructor(message = "RAFFLE_GATE_REQUIRED") {
@@ -65,11 +76,14 @@ export async function setRaffleGateSession() {
   const token = createGateSessionValue(gate.passwordUpdatedAt.getTime());
   const jar = await cookies();
   jar.set(COOKIE, token, gateSessionCookieOptions());
+  jar.set(LEGACY_COOKIE, "", expiredGateCookieOptions());
 }
 
 export async function clearRaffleGateSession() {
   const jar = await cookies();
-  jar.delete(COOKIE);
+  const expired = expiredGateCookieOptions();
+  jar.set(COOKIE, "", expired);
+  jar.set(LEGACY_COOKIE, "", expired);
 }
 
 export async function isRaffleGateUnlocked() {

@@ -14,6 +14,10 @@ import {
 } from "@/lib/wallet/validate";
 import { formatLocalDateTime } from "@/lib/datetime/local-input";
 import { gateFetch } from "@/lib/auth/gate-fetch";
+import {
+  hasRafflePasswordTabSession,
+  markRafflePasswordTabSession,
+} from "@/lib/auth/gate-browser-session";
 
 type RafflePayload = {
   slug: string;
@@ -85,6 +89,13 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         const data = (await res.json()) as { required?: boolean; unlocked?: boolean };
         const required = data.required === true;
         setGateRequired(required);
+
+        if (required && data.unlocked === true && !hasRafflePasswordTabSession(slug)) {
+          await gateFetch(`/api/raffles/${slug}/lock`, { method: "POST" });
+          setGateUnlocked(false);
+          return;
+        }
+
         setGateUnlocked(!required || data.unlocked === true);
       })
       .catch(() => {
@@ -162,6 +173,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         return;
       }
 
+      markRafflePasswordTabSession(slug);
       window.location.reload();
     } finally {
       setGateSubmitting(false);
