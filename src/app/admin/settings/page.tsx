@@ -5,6 +5,7 @@ import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 
 export default function AdminSettingsPage() {
+  const [enabled, setEnabled] = useState(false);
   const [password, setPassword] = useState("");
   const [configured, setConfigured] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -17,6 +18,7 @@ export default function AdminSettingsPage() {
     void fetch("/api/admin/settings/gate")
       .then((res) => res.json())
       .then((data) => {
+        setEnabled(Boolean(data.enabled));
         setConfigured(Boolean(data.configured));
         setPassword(String(data.password ?? ""));
         setUpdatedAt(data.updatedAt ?? null);
@@ -29,8 +31,8 @@ export default function AdminSettingsPage() {
     setMessage(null);
     setError(null);
 
-    if (!password.trim()) {
-      setError("Password cannot be empty.");
+    if (enabled && !password.trim()) {
+      setError("Password is required when platform password is enabled.");
       return;
     }
 
@@ -39,18 +41,23 @@ export default function AdminSettingsPage() {
       const res = await fetch("/api/admin/settings/gate", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ enabled, password: enabled ? password : undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Could not save password.");
+        setError(data.error ?? "Could not save settings.");
         return;
       }
 
-      setConfigured(true);
+      setEnabled(Boolean(data.enabled));
+      setConfigured(Boolean(data.configured));
       setPassword(String(data.password ?? ""));
       setUpdatedAt(data.updatedAt ?? null);
-      setMessage("Gate password saved. All users must unlock again.");
+      setMessage(
+        data.enabled
+          ? "Platform password enabled. All users must unlock again."
+          : "Platform password disabled. The raffles page is now open.",
+      );
     } finally {
       setSaving(false);
     }
@@ -67,25 +74,47 @@ export default function AdminSettingsPage() {
           <p className="al-empty-copy">Loading…</p>
         ) : (
           <form className="al-admin-form" onSubmit={handleSubmit}>
-            <h2 className="al-admin-section-title">Raffle platform password</h2>
+            <h2 className="al-admin-section-title">Raffle platform access</h2>
             <p className="al-empty-copy">
-              This password protects the public raffle desktop. It is stored encrypted
-              in the database. Changing it immediately invalidates all active unlock
-              sessions.
+              When platform password is off, the main raffles page is open to
+              everyone. Individual raffles can still require their own password.
+              When on, visitors must unlock the platform before browsing raffles.
             </p>
 
-            <label className="al-admin-label">
-              Current password
-              <input
-                className="al-admin-input"
-                type="text"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="off"
-                spellCheck={false}
+            <fieldset className="al-admin-fieldset">
+              <legend>Platform Password</legend>
+              <button
+                type="button"
+                className={`al-admin-toggle${enabled ? " active" : ""}`}
+                onClick={() => setEnabled(true)}
                 disabled={saving}
-              />
-            </label>
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className={`al-admin-toggle${!enabled ? " active" : ""}`}
+                onClick={() => setEnabled(false)}
+                disabled={saving}
+              >
+                No
+              </button>
+            </fieldset>
+
+            {enabled ? (
+              <label className="al-admin-label">
+                Password
+                <input
+                  className="al-admin-input"
+                  type="text"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={saving}
+                />
+              </label>
+            ) : null}
 
             {updatedAt ? (
               <p className="al-empty-copy">
@@ -98,7 +127,7 @@ export default function AdminSettingsPage() {
             {message ? <p className="arena-result show ok">{message}</p> : null}
 
             <button type="submit" className="al-admin-btn primary" disabled={saving}>
-              {saving ? "Saving…" : configured ? "Save new password" : "Set password"}
+              {saving ? "Saving…" : "Save settings"}
             </button>
           </form>
         )}

@@ -35,9 +35,16 @@ export default function RaffleUnlockPage() {
           return;
         }
         const data = (await res.json()) as {
+          enabled?: boolean;
           configured?: boolean;
           unlocked?: boolean;
         };
+
+        if (data.enabled === false) {
+          window.location.replace(nextPath);
+          return;
+        }
+
         setConfigured(data.configured !== false);
 
         if (data.unlocked === true && !hasPlatformGateTabSession()) {

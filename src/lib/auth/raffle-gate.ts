@@ -42,6 +42,11 @@ export async function getGatePasswordPlaintext() {
   return decryptGatePassword(gate.passwordEnc);
 }
 
+export async function isPlatformGateEnabled() {
+  const gate = await findGateRecord();
+  return Boolean(gate?.enabled);
+}
+
 export async function updateGatePassword(password: string) {
   const trimmed = password.trim();
   if (!trimmed) {
@@ -53,24 +58,84 @@ export async function updateGatePassword(password: string) {
     where: { id: GATE_ID },
     create: {
       id: GATE_ID,
+      enabled: true,
       passwordEnc: encryptGatePassword(trimmed),
       passwordUpdatedAt: now,
     },
     update: {
+      enabled: true,
       passwordEnc: encryptGatePassword(trimmed),
       passwordUpdatedAt: now,
     },
   });
 }
 
+export async function updatePlatformGateSettings(input: {
+  enabled?: boolean;
+  password?: string;
+}) {
+  const existing = await findGateRecord();
+  const now = new Date();
+
+  if (input.enabled === false) {
+    if (!existing) return null;
+    return prisma.platformGate.update({
+      where: { id: GATE_ID },
+      data: { enabled: false },
+    });
+  }
+
+  const nextEnabled = input.enabled ?? existing?.enabled ?? false;
+  const passwordProvided = input.password !== undefined;
+  const trimmedPassword = input.password?.trim() ?? "";
+
+  if (nextEnabled) {
+    const resolvedPassword =
+      trimmedPassword ||
+      (existing?.passwordEnc ? decryptGatePassword(existing.passwordEnc) : null);
+    if (!resolvedPassword) {
+      throw new Error("Password is required when platform password is enabled.");
+    }
+
+    const passwordUpdate = passwordProvided
+      ? {
+          passwordEnc: encryptGatePassword(trimmedPassword),
+          passwordUpdatedAt: now,
+        }
+      : {};
+
+    return prisma.platformGate.upsert({
+      where: { id: GATE_ID },
+      create: {
+        id: GATE_ID,
+        enabled: true,
+        passwordEnc: encryptGatePassword(resolvedPassword),
+        passwordUpdatedAt: now,
+      },
+      update: {
+        ...passwordUpdate,
+        enabled: true,
+      },
+    });
+  }
+
+  if (passwordProvided && trimmedPassword) {
+    throw new Error("Enable platform password before setting a password.");
+  }
+
+  return existing;
+}
+
 export async function verifySubmittedGatePassword(password: string) {
   const gate = await findGateRecord();
+  if (!gate?.enabled) throw new RaffleGateError("RAFFLE_GATE_DISABLED");
   if (!gate) throw new RaffleGateError("RAFFLE_GATE_NOT_CONFIGURED");
   return verifyGatePassword(password, gate.passwordEnc);
 }
 
 export async function setRaffleGateSession() {
   const gate = await findGateRecord();
+  if (!gate?.enabled) return;
   if (!gate) throw new RaffleGateError("RAFFLE_GATE_NOT_CONFIGURED");
 
   const token = createGateSessionValue(gate.passwordUpdatedAt.getTime());
@@ -96,6 +161,9 @@ export async function isRaffleGateUnlocked() {
 }
 
 export async function requireRaffleGate() {
+  const gate = await findGateRecord();
+  if (!gate?.enabled) return true;
+
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) throw new RaffleGateError();
@@ -103,7 +171,6 @@ export async function requireRaffleGate() {
   const parsed = verifyGateToken(token);
   if (!parsed) throw new RaffleGateError();
 
-  const gate = await findGateRecord();
   if (!gate) throw new RaffleGateError("RAFFLE_GATE_NOT_CONFIGURED");
 
   if (gate.passwordUpdatedAt.getTime() !== parsed.version) {

@@ -41,9 +41,11 @@ async function main() {
       where: { id: "default" },
       create: {
         id: "default",
+        enabled: true,
         passwordEnc: encryptGatePassword(gatePassword),
       },
       update: {
+        enabled: true,
         passwordEnc: encryptGatePassword(gatePassword),
         passwordUpdatedAt: new Date(),
       },

@@ -7,6 +7,7 @@ import { gateFetch } from "@/lib/auth/gate-fetch";
 
 export function RaffleGateShell({ children }: { children: ReactNode }) {
   const [verified, setVerified] = useState(false);
+  const [gateEnabled, setGateEnabled] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -19,7 +20,15 @@ export function RaffleGateShell({ children }: { children: ReactNode }) {
           return;
         }
 
-        const data = (await res.json()) as { unlocked?: boolean };
+        const data = (await res.json()) as { enabled?: boolean; unlocked?: boolean };
+        if (data.enabled === false) {
+          setGateEnabled(false);
+          setVerified(true);
+          return;
+        }
+
+        setGateEnabled(true);
+
         if (data.unlocked === true && !hasPlatformGateTabSession()) {
           await gateFetch("/api/raffles/gate/lock", { method: "POST" });
           const next = encodeURIComponent(
@@ -46,7 +55,7 @@ export function RaffleGateShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <RaffleGateWatcher />
+      {gateEnabled ? <RaffleGateWatcher /> : null}
       {children}
     </>
   );

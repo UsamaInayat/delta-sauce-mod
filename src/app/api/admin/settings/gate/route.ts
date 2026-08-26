@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptGatePassword } from "@/lib/auth/gate-crypto";
-import { updateGatePassword } from "@/lib/auth/raffle-gate";
+import { updatePlatformGateSettings } from "@/lib/auth/raffle-gate";
 
 export async function GET() {
   try {
@@ -14,6 +14,7 @@ export async function GET() {
   const gate = await prisma.platformGate.findUnique({ where: { id: "default" } });
   if (!gate) {
     return NextResponse.json({
+      enabled: false,
       configured: false,
       password: "",
       updatedAt: null,
@@ -21,6 +22,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    enabled: gate.enabled,
     configured: true,
     password: decryptGatePassword(gate.passwordEnc) ?? "",
     updatedAt: gate.passwordUpdatedAt.toISOString(),
@@ -35,16 +37,37 @@ export async function PUT(req: Request) {
   }
 
   const body = await req.json();
-  const password = String(body.password ?? "").trim();
-  if (!password) {
-    return NextResponse.json({ error: "Password cannot be empty." }, { status: 400 });
+  const enabled =
+    body.enabled === undefined ? undefined : Boolean(body.enabled);
+  const password =
+    body.password === undefined ? undefined : String(body.password).trim();
+
+  if (enabled === undefined && password === undefined) {
+    return NextResponse.json({ error: "No changes to save." }, { status: 400 });
+  }
+
+  if (enabled === true && password === "") {
+    return NextResponse.json(
+      { error: "Password is required when platform password is enabled." },
+      { status: 400 },
+    );
   }
 
   try {
-    const gate = await updateGatePassword(password);
+    const gate = await updatePlatformGateSettings({ enabled, password });
+    if (!gate) {
+      return NextResponse.json({
+        enabled: false,
+        configured: false,
+        password: "",
+        updatedAt: null,
+      });
+    }
+
     return NextResponse.json({
+      enabled: gate.enabled,
       configured: true,
-      password,
+      password: decryptGatePassword(gate.passwordEnc) ?? "",
       updatedAt: gate.passwordUpdatedAt.toISOString(),
     });
   } catch (error) {

@@ -142,6 +142,7 @@ model RaffleEntry {
 
 model PlatformGate {
   id                  String   @id @default("default")
+  enabled             Boolean  @default(false)
   passwordEnc         String
   passwordUpdatedAt   DateTime @default(now())
   createdAt           DateTime @default(now())
