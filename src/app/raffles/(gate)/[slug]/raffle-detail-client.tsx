@@ -13,6 +13,7 @@ import {
   isValidXHandle,
 } from "@/lib/wallet/validate";
 import { formatLocalDateTime } from "@/lib/datetime/local-input";
+import { gateFetch } from "@/lib/auth/gate-fetch";
 
 type RafflePayload = {
   slug: string;
@@ -67,10 +68,12 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
   useEffect(() => {
     setGateChecking(true);
     setLoadError(null);
-    void fetch(`/api/raffles/${slug}/gate/status`, { cache: "no-store" })
+    void gateFetch(`/api/raffles/${slug}/gate/status`)
       .then(async (res) => {
         if (res.status === 401) {
-          setLoadError("Your session expired. Refresh the page to unlock again.");
+          window.location.replace(
+            `/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`,
+          );
           return;
         }
         if (!res.ok) {
@@ -98,17 +101,18 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
       setRaffle(null);
       return true;
     }
-    setLoadError("Your session expired. Refresh the page to unlock again.");
+    window.location.replace(
+      `/raffles/unlock?next=${encodeURIComponent(`/raffles/${slug}`)}`,
+    );
     return true;
-  }, []);
+  }, [slug]);
 
   const load = useCallback(async () => {
     if (!slug || !gateUnlocked) return;
     setLoadError(null);
     const storedWallet = localStorage.getItem(`ds-wallet-${slug}`) ?? "";
-    const res = await fetch(
+    const res = await gateFetch(
       `/api/raffles/${slug}?wallet=${encodeURIComponent(storedWallet)}`,
-      { cache: "no-store" },
     );
     if (res.status === 401) {
       await handleUnauthorized(res);
@@ -142,10 +146,10 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     setGateSubmitting(true);
 
     try {
-      const res = await fetch(`/api/raffles/${slug}/unlock`, {
+      const res = await gateFetch(`/api/raffles/${slug}/unlock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: gatePassword }),
+        body: JSON.stringify({ password: gatePassword.trim() }),
       });
       const data = await res.json();
 
@@ -156,8 +160,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         return;
       }
 
-      setGateUnlocked(true);
-      setGatePassword("");
+      window.location.reload();
     } finally {
       setGateSubmitting(false);
     }
@@ -203,7 +206,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/raffles/${slug}/entry`, {
+      const res = await gateFetch(`/api/raffles/${slug}/entry`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet, xHandle }),
@@ -233,7 +236,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
   async function cancelEntry() {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/raffles/${slug}/entry`, {
+      const res = await gateFetch(`/api/raffles/${slug}/entry`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet }),

@@ -37,15 +37,17 @@ export async function updateGatePassword(password: string) {
     throw new Error("Password cannot be empty.");
   }
 
+  const now = new Date();
   return prisma.platformGate.upsert({
     where: { id: GATE_ID },
     create: {
       id: GATE_ID,
       passwordEnc: encryptGatePassword(trimmed),
+      passwordUpdatedAt: now,
     },
     update: {
       passwordEnc: encryptGatePassword(trimmed),
-      passwordUpdatedAt: new Date(),
+      passwordUpdatedAt: now,
     },
   });
 }

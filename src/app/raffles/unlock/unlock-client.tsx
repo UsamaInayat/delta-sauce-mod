@@ -1,10 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DeltaShell } from "@/components/delta/delta-shell";
 import { MacGateDialog } from "@/components/delta/mac-gate-dialog";
+import { gateFetch } from "@/lib/auth/gate-fetch";
 
 function normalizeNextPath(path: string | null) {
   if (!path || path === "/") return "/raffles";
@@ -24,7 +24,7 @@ export default function RaffleUnlockPage() {
   const nextPath = normalizeNextPath(searchParams.get("next"));
 
   useEffect(() => {
-    void fetch("/api/raffles/gate/status", { cache: "no-store" })
+    void gateFetch("/api/raffles/gate/status")
       .then(async (res) => {
         if (!res.ok) {
           setConfigured(false);
@@ -46,10 +46,10 @@ export default function RaffleUnlockPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/raffles/gate/unlock", {
+      const res = await gateFetch("/api/raffles/gate/unlock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: password.trim() }),
       });
       const data = await res.json();
 
@@ -60,7 +60,7 @@ export default function RaffleUnlockPage() {
         return;
       }
 
-      window.location.assign(nextPath);
+      window.location.replace(nextPath);
     } finally {
       setSubmitting(false);
     }
@@ -77,9 +77,9 @@ export default function RaffleUnlockPage() {
         {alreadyUnlocked ? (
           <div className="al-dialog-body">
             <p className="al-empty-copy">You are already unlocked.</p>
-            <Link href={nextPath} className="al-admin-btn primary">
+            <a href={nextPath} className="al-admin-btn primary">
               Continue to raffles
-            </Link>
+            </a>
           </div>
         ) : (
           <MacGateDialog

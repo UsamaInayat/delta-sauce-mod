@@ -50,10 +50,13 @@ function digest(value: string) {
 }
 
 export function verifyGatePassword(plain: string, stored: string) {
+  const normalized = plain.trim();
+  if (!normalized) return false;
+
   const decrypted = decryptGatePassword(stored);
   if (decrypted === null) return false;
 
   const left = digest(decrypted);
-  const right = digest(plain);
+  const right = digest(normalized);
   return timingSafeEqual(left, right);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { gateFetch } from "@/lib/auth/gate-fetch";
 
 const POLL_MS = 2500;
 
@@ -12,7 +13,7 @@ export function RaffleGateWatcher() {
 
     async function check() {
       try {
-        const res = await fetch("/api/raffles/gate/status", { cache: "no-store" });
+        const res = await gateFetch("/api/raffles/gate/status");
         if (!res.ok || !active) return;
 
         const data = (await res.json()) as { unlocked?: boolean };

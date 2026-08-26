@@ -25,9 +25,14 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/raffles") &&
     !pathname.startsWith("/raffles/unlock")
   ) {
-    const response = NextResponse.next();
-    response.headers.set("x-raffle-next", `${pathname}${search}`);
-    return response;
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-raffle-next", `${pathname}${search}`);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   return NextResponse.next();

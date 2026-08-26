@@ -8,12 +8,14 @@ import {
 } from "@/lib/auth/gate-rate-limit";
 import {
   RafflePasswordError,
-  setRafflePasswordSessionOnResponse,
+  setRafflePasswordSession,
   verifySubmittedRafflePassword,
 } from "@/lib/auth/raffle-password";
 import { prisma } from "@/lib/prisma";
 import { RaffleStatus } from "@prisma/client";
 import { isRafflePasswordActive } from "@/lib/raffles/lifecycle";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
@@ -34,7 +36,7 @@ export async function POST(
     );
   }
 
-  const raffle = await prisma.raffle.findFirst({
+  let raffle = await prisma.raffle.findFirst({
     where: { slug, status: { not: RaffleStatus.DRAFT } },
     select: {
       slug: true,
@@ -56,6 +58,23 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
+  if (raffle.passwordEnc && !raffle.passwordUpdatedAt) {
+    raffle = await prisma.raffle.update({
+      where: { slug },
+      data: { passwordUpdatedAt: new Date() },
+      select: {
+        slug: true,
+        passwordProtected: true,
+        passwordEnc: true,
+        passwordUpdatedAt: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        closedAt: true,
+      },
+    });
+  }
+
   let body: { password?: string };
   try {
     body = await req.json();
@@ -63,8 +82,8 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const password = String(body.password ?? "");
-  if (!password.trim()) {
+  const password = String(body.password ?? "").trim();
+  if (!password) {
     return NextResponse.json({ error: "Password is required." }, { status: 400 });
   }
 
@@ -84,9 +103,8 @@ export async function POST(
       throw new RafflePasswordError("RAFFLE_PASSWORD_NOT_CONFIGURED");
     }
 
-    const response = NextResponse.json({ ok: true });
-    setRafflePasswordSessionOnResponse(response, slug, raffle.passwordUpdatedAt);
-    return response;
+    await setRafflePasswordSession(slug, raffle.passwordUpdatedAt);
+    return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof RafflePasswordError) {
       return NextResponse.json(

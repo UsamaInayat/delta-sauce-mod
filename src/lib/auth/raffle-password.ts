@@ -82,8 +82,7 @@ export async function enforceRafflePasswordApi(
   }
 }
 
-export function setRafflePasswordSessionOnResponse(
-  response: NextResponse,
+export async function setRafflePasswordSession(
   slug: string,
   passwordUpdatedAt: Date,
 ) {
@@ -91,12 +90,12 @@ export function setRafflePasswordSessionOnResponse(
     slug,
     passwordUpdatedAt.getTime(),
   );
-  response.cookies.set(
+  const jar = await cookies();
+  jar.set(
     rafflePasswordCookieName(slug),
     token,
     rafflePasswordSessionCookieOptions(),
   );
-  return response;
 }
 
 export function sanitizeRaffleForAdmin<T extends Record<string, unknown>>(raffle: T) {
