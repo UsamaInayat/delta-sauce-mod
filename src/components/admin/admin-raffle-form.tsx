@@ -42,6 +42,7 @@ type LoadedRaffle = {
   autoFinalize: boolean;
   tokenGated: boolean;
   passwordProtected: boolean;
+  passwordSaved?: boolean;
   collections: Array<{ collectionId: string }>;
   itemName: string | null;
   openseaUrl: string | null;
@@ -124,7 +125,7 @@ export default function AdminRaffleForm({
         const raffle = d.raffle as LoadedRaffle | undefined;
         if (!raffle) return;
         setRaffleStatus(raffle.status ?? "DRAFT");
-        setHasSavedPassword(Boolean(raffle.passwordProtected));
+        setHasSavedPassword(Boolean(raffle.passwordSaved));
         setForm({ ...raffleToForm(raffle), password: "" });
       });
   }, [raffleId]);
@@ -158,8 +159,8 @@ export default function AdminRaffleForm({
     }
     const raffle = data.raffle as LoadedRaffle;
     setRaffleStatus(raffle.status ?? "DRAFT");
-    if (form.passwordProtected && form.password.trim()) {
-      setHasSavedPassword(true);
+    setHasSavedPassword(Boolean(raffle.passwordSaved));
+    if (form.password.trim()) {
       setForm((f) => ({ ...f, password: "" }));
     }
     return raffle;
@@ -230,9 +231,7 @@ export default function AdminRaffleForm({
       throw new Error(data.error ?? "Save failed");
     }
     const raffle = data.raffle as LoadedRaffle;
-    if (form.passwordProtected && form.password.trim()) {
-      setHasSavedPassword(true);
-    }
+    setHasSavedPassword(Boolean(raffle.passwordSaved));
     return raffle.id;
   }
 
@@ -596,3 +595,4 @@ export default function AdminRaffleForm({
     </DeltaAdminShell>
   );
 }
+

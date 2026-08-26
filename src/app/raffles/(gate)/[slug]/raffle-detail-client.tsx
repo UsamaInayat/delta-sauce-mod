@@ -77,8 +77,9 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
           return;
         }
         if (!res.ok) {
-          setGateRequired(false);
-          setGateUnlocked(true);
+          setGateRequired(true);
+          setGateUnlocked(false);
+          setLoadError("Could not verify raffle access. Try again.");
           return;
         }
         const data = (await res.json()) as { required?: boolean; unlocked?: boolean };
@@ -87,8 +88,9 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         setGateUnlocked(!required || data.unlocked === true);
       })
       .catch(() => {
-        setGateRequired(false);
-        setGateUnlocked(true);
+        setGateRequired(true);
+        setGateUnlocked(false);
+        setLoadError("Could not verify raffle access. Try again.");
       })
       .finally(() => setGateChecking(false));
   }, [slug]);

@@ -99,8 +99,11 @@ export async function setRafflePasswordSession(
 }
 
 export function sanitizeRaffleForAdmin<T extends Record<string, unknown>>(raffle: T) {
-  const { passwordEnc: _enc, password: _plain, ...rest } = raffle;
-  return rest;
+  const { passwordEnc: enc, password: _plain, ...rest } = raffle;
+  return {
+    ...rest,
+    passwordSaved: Boolean(enc),
+  };
 }
 
 export function sanitizeRaffleForPublic<T extends Record<string, unknown>>(raffle: T) {

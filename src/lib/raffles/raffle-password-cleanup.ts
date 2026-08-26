@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { isRaffleListedOnMainPage } from "@/lib/raffles/lifecycle";
+import { isRafflePasswordActive } from "@/lib/raffles/lifecycle";
 
 export async function clearExpiredRafflePasswords(now = new Date()) {
   const protectedRaffles = await prisma.raffle.findMany({
@@ -13,18 +13,20 @@ export async function clearExpiredRafflePasswords(now = new Date()) {
       startsAt: true,
       endsAt: true,
       closedAt: true,
+      passwordProtected: true,
+      passwordEnc: true,
     },
   });
 
   for (const raffle of protectedRaffles) {
-    if (!isRaffleListedOnMainPage(raffle, now)) {
-      await prisma.raffle.update({
-        where: { id: raffle.id },
-        data: {
-          passwordEnc: null,
-          passwordUpdatedAt: null,
-        },
-      });
-    }
+    if (isRafflePasswordActive(raffle, now)) continue;
+
+    await prisma.raffle.update({
+      where: { id: raffle.id },
+      data: {
+        passwordEnc: null,
+        passwordUpdatedAt: null,
+      },
+    });
   }
 }

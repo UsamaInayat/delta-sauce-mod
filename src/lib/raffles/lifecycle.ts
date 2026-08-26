@@ -67,7 +67,17 @@ export function isRafflePasswordActive(
   now: Date = new Date(),
 ) {
   if (!raffle.passwordProtected || !raffle.passwordEnc) return false;
-  return isRaffleListedOnMainPage(raffle, now);
+
+  const label = getRaffleLifecycleLabel(raffle, now);
+  if (label === "DRAFT") return false;
+  if (label === "SCHEDULED" || label === "LIVE" || label === "ENDED") {
+    return true;
+  }
+  if (label === "FINALIZED") {
+    return isRaffleListedOnMainPage(raffle, now);
+  }
+
+  return false;
 }
 
 export function isRaffleLockedFromEdits(
