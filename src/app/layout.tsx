@@ -4,6 +4,10 @@ import "@/styles/delta-theme.css";
 export const metadata: Metadata = {
   title: "Delta Sauce Raffles",
   description: "DeltaSauce raffle and allowlist platform",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

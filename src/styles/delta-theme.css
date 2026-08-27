@@ -93,6 +93,33 @@
   }
 }
 
+/* site header (matches deltasauceart.com) */
+.arena-portfolio-wrapper .delta-site-header,
+.delta-admin-shell .delta-site-header {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  background: #000 !important;
+  padding: 14px 32px !important;
+  box-sizing: border-box !important;
+}
+
+.arena-portfolio-wrapper .delta-site-header-link,
+.delta-admin-shell .delta-site-header-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 0 !important;
+  text-decoration: none !important;
+}
+
+.arena-portfolio-wrapper .delta-site-header-logo,
+.delta-admin-shell .delta-site-header-logo {
+  display: block !important;
+  width: auto !important;
+  height: 28px !important;
+  max-width: min(180px, 42vw) !important;
+}
+
 /* header nav */
 .arena-portfolio-wrapper .arena-header,
 .delta-admin-shell .arena-header {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { DeltaDesk } from "@/components/delta/delta-desk";
+import { DeltaSiteHeader } from "@/components/delta/delta-site-header";
 import { RafaelBranding, RafaelSticker } from "@/components/delta/rafael-branding";
 
 export type DeltaBreadcrumb = {
@@ -47,6 +48,7 @@ export function DeltaShell({
 }: DeltaShellProps) {
   return (
     <div className="arena-portfolio-wrapper">
+      <DeltaSiteHeader />
       <div className="al-ceiling" aria-hidden="true">
         <span className="al-lightpanel" />
         <span className="al-lightpanel" />
