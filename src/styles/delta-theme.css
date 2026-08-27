@@ -142,8 +142,9 @@
 .delta-admin-shell .delta-site-header-logo {
   display: block !important;
   width: auto !important;
-  height: 28px !important;
-  max-width: min(180px, 34vw) !important;
+  height: auto !important;
+  max-height: 45px !important;
+  max-width: none !important;
 }
 
 .arena-portfolio-wrapper .delta-site-nav,

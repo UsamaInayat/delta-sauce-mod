@@ -109,10 +109,11 @@ export function DeltaSiteHeader() {
             <Image
               src="/deltasauce-logo.png"
               alt="Delta Sauce"
-              width={180}
-              height={28}
+              width={1024}
+              height={278}
               className="delta-site-header-logo"
               priority
+              sizes="166px"
             />
           </Link>
 
