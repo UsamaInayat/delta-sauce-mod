@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { DeltaSiteHeader } from "@/components/delta/delta-site-header";
 import "@/styles/delta-theme.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
         <Script id="typekit-init" strategy="beforeInteractive">
           {`try { Typekit.load(); } catch (e) {} document.documentElement.classList.remove("wf-loading");`}
         </Script>
+        <DeltaSiteHeader />
         {children}
       </body>
     </html>

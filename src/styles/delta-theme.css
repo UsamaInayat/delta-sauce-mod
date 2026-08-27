@@ -2,15 +2,31 @@
 
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;700&display=swap");
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .arena-portfolio-wrapper,
 .delta-admin-shell {
   all: initial;
   display: block !important;
+  flex: 1 0 auto;
   width: 100% !important;
   font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif !important;
   color: #e8e8e8 !important;
   line-height: 1.5 !important;
-  min-height: 100vh;
+  min-height: 0;
   box-sizing: border-box !important;
   background-color: #14120a !important;
   background-image:
@@ -93,10 +109,11 @@
   }
 }
 
-/* site header (matches deltasauceart.com) */
-.arena-portfolio-wrapper .delta-site-header,
+/* site header (matches deltasauceart.com — outside arena wrapper, like Squarespace) */
+.delta-site-header,
 .delta-admin-shell .delta-site-header {
   display: block !important;
+  flex: 0 0 auto;
   width: 100% !important;
   background: #000 !important;
   color: #fff !important;
@@ -105,9 +122,11 @@
   font-size: 1rem !important;
   letter-spacing: 0.05em !important;
   line-height: 1.2 !important;
+  margin: 0 !important;
+  border: none !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-inner,
+.delta-site-header-inner,
 .delta-admin-shell .delta-site-header-inner {
   display: flex !important;
   align-items: center !important;
@@ -120,7 +139,7 @@
   box-sizing: border-box !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-left,
+.delta-site-header-left,
 .delta-admin-shell .delta-site-header-left {
   display: flex !important;
   align-items: center !important;
@@ -129,7 +148,7 @@
   flex: 1 1 auto !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-link,
+.delta-site-header-link,
 .delta-admin-shell .delta-site-header-link {
   display: inline-flex !important;
   align-items: center !important;
@@ -138,7 +157,7 @@
   flex: 0 0 auto !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-logo,
+.delta-site-header-logo,
 .delta-admin-shell .delta-site-header-logo {
   display: block !important;
   width: auto !important;
@@ -147,13 +166,13 @@
   max-width: none !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav,
+.delta-site-nav,
 .delta-admin-shell .delta-site-nav {
   display: block !important;
   min-width: 0 !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-list,
+.delta-site-nav-list,
 .delta-admin-shell .delta-site-nav-list {
   display: flex !important;
   align-items: center !important;
@@ -161,15 +180,15 @@
   gap: 0 !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-item,
+.delta-site-nav-item,
 .delta-admin-shell .delta-site-nav-item {
   position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-link,
-.arena-portfolio-wrapper .delta-site-nav-folder-title,
+.delta-site-nav-link,
+.delta-site-nav-folder-title,
 .delta-admin-shell .delta-site-nav-link,
 .delta-admin-shell .delta-site-nav-folder-title {
   display: inline-flex !important;
@@ -186,14 +205,14 @@
   white-space: nowrap !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-link:hover,
-.arena-portfolio-wrapper .delta-site-nav-folder-title:hover,
+.delta-site-nav-link:hover,
+.delta-site-nav-folder-title:hover,
 .delta-admin-shell .delta-site-nav-link:hover,
 .delta-admin-shell .delta-site-nav-folder-title:hover {
   opacity: 0.72 !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-folder-menu,
+.delta-site-nav-folder-menu,
 .delta-admin-shell .delta-site-nav-folder-menu {
   display: none !important;
   position: absolute !important;
@@ -206,14 +225,14 @@
   z-index: 50 !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-folder:hover .delta-site-nav-folder-menu,
-.arena-portfolio-wrapper .delta-site-nav-folder:focus-within .delta-site-nav-folder-menu,
+.delta-site-nav-folder:hover .delta-site-nav-folder-menu,
+.delta-site-nav-folder:focus-within .delta-site-nav-folder-menu,
 .delta-admin-shell .delta-site-nav-folder:hover .delta-site-nav-folder-menu,
 .delta-admin-shell .delta-site-nav-folder:focus-within .delta-site-nav-folder-menu {
   display: block !important;
 }
 
-.arena-portfolio-wrapper .delta-site-nav-folder-menu .delta-site-nav-link,
+.delta-site-nav-folder-menu .delta-site-nav-link,
 .delta-admin-shell .delta-site-nav-folder-menu .delta-site-nav-link {
   display: block !important;
   width: 100% !important;
@@ -221,7 +240,7 @@
   white-space: normal !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-actions,
+.delta-site-header-actions,
 .delta-admin-shell .delta-site-header-actions {
   display: flex !important;
   align-items: center !important;
@@ -229,19 +248,19 @@
   flex: 0 0 auto !important;
 }
 
-.arena-portfolio-wrapper .delta-site-login,
+.delta-site-login,
 .delta-admin-shell .delta-site-login {
   padding: 0.45em 0.2em !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-social,
+.delta-site-header-social,
 .delta-admin-shell .delta-site-header-social {
   display: inline-flex !important;
   align-items: center !important;
   gap: 10px !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-icon-link,
+.delta-site-header-icon-link,
 .delta-admin-shell .delta-site-header-icon-link {
   display: inline-flex !important;
   align-items: center !important;
@@ -250,20 +269,20 @@
   text-decoration: none !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-icon,
+.delta-site-header-icon,
 .delta-admin-shell .delta-site-header-icon {
   width: 22px !important;
   height: 22px !important;
   display: block !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-icon-cart,
+.delta-site-header-icon-cart,
 .delta-admin-shell .delta-site-header-icon-cart {
   width: 20px !important;
   height: 16px !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-cart,
+.delta-site-header-cart,
 .delta-admin-shell .delta-site-header-cart {
   display: inline-flex !important;
   align-items: center !important;
@@ -272,20 +291,20 @@
   text-decoration: none !important;
 }
 
-.arena-portfolio-wrapper .delta-site-header-cart-qty,
+.delta-site-header-cart-qty,
 .delta-admin-shell .delta-site-header-cart-qty {
   font-size: 0.95em !important;
   line-height: 1 !important;
 }
 
 @media (max-width: 1100px) {
-  .arena-portfolio-wrapper .delta-site-nav-list,
+  .delta-site-nav-list,
   .delta-admin-shell .delta-site-nav-list {
     gap: 0 !important;
   }
 
-  .arena-portfolio-wrapper .delta-site-nav-link,
-  .arena-portfolio-wrapper .delta-site-nav-folder-title,
+  .delta-site-nav-link,
+  .delta-site-nav-folder-title,
   .delta-admin-shell .delta-site-nav-link,
   .delta-admin-shell .delta-site-nav-folder-title {
     padding: 0.4em 0.55em !important;
@@ -294,25 +313,25 @@
 }
 
 @media (max-width: 900px) {
-  .arena-portfolio-wrapper .delta-site-header-inner,
+  .delta-site-header-inner,
   .delta-admin-shell .delta-site-header-inner {
     flex-wrap: wrap !important;
     padding: 14px 16px !important;
   }
 
-  .arena-portfolio-wrapper .delta-site-header-left,
+  .delta-site-header-left,
   .delta-admin-shell .delta-site-header-left {
     flex-wrap: wrap !important;
     width: 100% !important;
   }
 
-  .arena-portfolio-wrapper .delta-site-nav,
+  .delta-site-nav,
   .delta-admin-shell .delta-site-nav {
     width: 100% !important;
     overflow-x: auto !important;
   }
 
-  .arena-portfolio-wrapper .delta-site-header-actions,
+  .delta-site-header-actions,
   .delta-admin-shell .delta-site-header-actions {
     margin-left: auto !important;
   }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { RafaelBranding, RafaelSticker } from "@/components/delta/rafael-branding";
-import { DeltaSiteHeader } from "@/components/delta/delta-site-header";
 
 const ADMIN_TABS = [
   { label: "Create Raffle", href: "/admin/raffles/new" },
@@ -44,7 +43,6 @@ export function DeltaAdminShell({ children, pageTitle = "Admin" }: DeltaAdminShe
 
   return (
     <div className="delta-admin-shell">
-      <DeltaSiteHeader />
       <div className="al-ceiling" aria-hidden="true">
         <span className="al-lightpanel" />
         <span className="al-lightpanel" />
