@@ -11,7 +11,6 @@ export default async function RafflesPage() {
     <DeltaShell
       breadcrumb={[
         { label: "Explore", href: "https://deltasauceart.com/explore/all" },
-        { label: "Raffles" },
       ]}
       pageTitle="Raffles"
       taskLabel="RAFFLES.EXE"

@@ -320,7 +320,6 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
       <DeltaShell
         breadcrumb={[
           { label: "Raffles", href: "/raffles" },
-          { label: "Unlock" },
         ]}
         pageTitle="Unlock Raffle"
         taskLabel="RAFFLE.EXE"
@@ -356,10 +355,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
 
   return (
     <DeltaShell
-      breadcrumb={[
-        { label: "Raffles", href: "/raffles" },
-        { label: raffle.title },
-      ]}
+      breadcrumb={[{ label: "Raffles", href: "/raffles" }]}
       pageTitle={raffle.title}
       taskLabel="RAFFLE.EXE"
     >
