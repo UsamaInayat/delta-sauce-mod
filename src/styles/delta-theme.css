@@ -394,18 +394,18 @@ body {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  padding-top: 84px !important;
+  padding-top: 48px !important;
 }
 
 .arena-portfolio-wrapper .al-wallclock,
 .delta-admin-shell .al-wallclock {
   position: absolute !important;
-  top: 2px !important;
-  right: 6% !important;
+  top: -18px !important;
+  left: 18px !important;
   width: 56px !important;
   height: 56px !important;
   border-radius: 50% !important;
-  z-index: 0 !important;
+  z-index: 3 !important;
   background: radial-gradient(circle at 40% 32%, #f5f2e8, #d9d4c4) !important;
   border: 5px solid #2a2620 !important;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5) !important;
@@ -1753,6 +1753,20 @@ body {
   .arena-portfolio-wrapper .al-scene,
   .delta-admin-shell .al-scene {
     padding: 4px 12px 40px !important;
+  }
+
+  .arena-portfolio-wrapper .al-setup,
+  .delta-admin-shell .al-setup {
+    padding-top: 36px !important;
+  }
+
+  .arena-portfolio-wrapper .al-wallclock,
+  .delta-admin-shell .al-wallclock {
+    top: -12px !important;
+    left: 10px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-width: 4px !important;
   }
 
   .arena-portfolio-wrapper .al-monitor,

@@ -74,9 +74,8 @@ export function DeltaShell({
 
       <div className="al-scene">
         <div className="al-setup">
-          <div className="al-wallclock" aria-hidden="true" />
-
           <div className="al-monitor">
+            <div className="al-wallclock" aria-hidden="true" />
             <RafaelSticker />
             <div className="al-sticky" aria-hidden="true">
               mint
