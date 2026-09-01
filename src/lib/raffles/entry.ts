@@ -8,6 +8,22 @@ import {
   normalizeXHandle,
   resolveWalletInput,
 } from "@/lib/wallet/validate";
+import { buildDrawWinChance, isDrawRaffleType } from "@/lib/raffles/win-chance";
+
+export async function getDrawWinChance(raffle: {
+  id: string;
+  type: string;
+  winnerCount: number | null;
+}) {
+  if (!isDrawRaffleType(raffle.type)) return null;
+
+  const spots = raffle.winnerCount ?? 1;
+  const entries = await prisma.raffleEntry.count({
+    where: { raffleId: raffle.id, status: EntryStatus.SUBMITTED },
+  });
+
+  return buildDrawWinChance(spots, entries);
+}
 
 export async function submitEntry(input: {
   raffleId: string;

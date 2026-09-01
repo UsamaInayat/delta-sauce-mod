@@ -25,6 +25,7 @@ type DeltaFormProps = {
   showUpdate?: boolean;
   submitting?: boolean;
   result?: DeltaFormResult;
+  notice?: string;
   walletError?: string;
   xHandleError?: string;
   footerNote?: string;
@@ -50,6 +51,7 @@ export function DeltaForm({
   showUpdate = false,
   submitting = false,
   result = null,
+  notice,
   walletError,
   xHandleError,
   footerNote = "Your details are sent securely to the DeltaSauce allowlist.",
@@ -96,6 +98,13 @@ export function DeltaForm({
           <div className={`arena-result show ${result.kind}`} role="status">
             <span className="al-msgicon" aria-hidden="true" />
             <span>{result.message}</span>
+          </div>
+        ) : null}
+
+        {notice ? (
+          <div className="arena-result show ok" role="status">
+            <span className="al-msgicon" aria-hidden="true" />
+            <span>{notice}</span>
           </div>
         ) : null}
 

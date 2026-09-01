@@ -9,7 +9,7 @@ import {
   isRafflePasswordActive,
   isRafflePubliclyVisible,
 } from "@/lib/raffles/lifecycle";
-import { lookupEntryResult } from "@/lib/raffles/entry";
+import { getDrawWinChance, lookupEntryResult } from "@/lib/raffles/entry";
 
 export async function GET(
   req: NextRequest,
@@ -90,6 +90,7 @@ export async function GET(
         name: rc.collection.name,
       })),
       entryCount: raffle._count.entries,
+      winChance: await getDrawWinChance(raffle),
       userEntry,
       result,
     },

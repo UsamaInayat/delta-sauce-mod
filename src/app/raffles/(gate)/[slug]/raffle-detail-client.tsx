@@ -19,6 +19,7 @@ import {
   hasRafflePasswordTabSession,
   markRafflePasswordTabSession,
 } from "@/lib/auth/gate-browser-session";
+import { drawWinChanceCopy } from "@/lib/raffles/win-chance";
 
 type RafflePayload = {
   slug: string;
@@ -37,6 +38,12 @@ type RafflePayload = {
   enterable: boolean;
   collections: Array<{ name: string }>;
   entryCount: number;
+  winChance?: {
+    percent: number;
+    label: string;
+    spots: number;
+    entries: number;
+  } | null;
   userEntry?: {
     walletAddress: string;
     walletEns: string | null;
@@ -233,7 +240,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet, xHandle }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string };
       if (res.status === 401) {
         await handleUnauthorized(res);
         return;
@@ -293,6 +300,10 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
       spots:
         raffle.type === "FCFS" && (raffle.winnerCount ?? raffle.spotCap) != null
           ? `${raffle.entryCount} / ${raffle.winnerCount ?? raffle.spotCap} FILLED`
+          : undefined,
+      winChance:
+        raffle.winChance && !raffle.result?.finalized
+          ? raffle.winChance.label
           : undefined,
       supply: "TBA",
       mintPrice: "TBA",
@@ -409,6 +420,13 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
             showUpdate={Boolean(raffle.userEntry)}
             submitting={submitting}
             result={result}
+            notice={
+              raffle.winChance
+                ? raffle.userEntry
+                  ? drawWinChanceCopy(raffle.winChance.label)
+                  : `Current chance of winning: ${raffle.winChance.label}`
+                : undefined
+            }
             walletError={walletError}
             xHandleError={xError}
             footerNote="Your entry is verified on-chain when token gating applies."
@@ -416,6 +434,12 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         ) : (
           <DeltaWindow title="Entries Closed">
             <div className="al-dialog-body">
+              {raffle.winChance && raffle.userEntry ? (
+                <div className="arena-result show ok" role="status">
+                  <span className="al-msgicon" aria-hidden="true" />
+                  <span>{drawWinChanceCopy(raffle.winChance.label)}</span>
+                </div>
+              ) : null}
               <p className="arena-form-sub">
                 This raffle is <strong>{raffle.lifecycle.toLowerCase()}</strong>.
                 {raffle.lifecycle === "SCHEDULED"

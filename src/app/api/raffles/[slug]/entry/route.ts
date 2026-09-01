@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { enforceRafflePasswordApi } from "@/lib/auth/raffle-password";
 import { prisma } from "@/lib/prisma";
-import { cancelEntry, submitEntry } from "@/lib/raffles/entry";
+import { cancelEntry, getDrawWinChance, submitEntry } from "@/lib/raffles/entry";
 
 export async function POST(
   req: NextRequest,
@@ -28,7 +28,8 @@ export async function POST(
       walletInput: String(body.wallet ?? ""),
       xHandle: String(body.xHandle ?? ""),
     });
-    return NextResponse.json({ entry });
+    const winChance = await getDrawWinChance(raffle);
+    return NextResponse.json({ entry, winChance });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Entry failed" },

@@ -9,6 +9,7 @@ export type DeltaReadmeDetails = {
   chain: string;
   entries: string;
   spots?: string;
+  winChance?: string;
   supply?: string;
   mintPrice?: string;
   dropDate?: string;
@@ -30,6 +31,7 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
     chain,
     entries,
     spots,
+    winChance,
     supply = "TBA",
     mintPrice = "TBA",
     dropDate = "TBA",
@@ -78,6 +80,12 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
           <div className="al-kv">
             <span>SPOTS</span>
             <span>{spots}</span>
+          </div>
+        ) : null}
+        {winChance ? (
+          <div className="al-kv">
+            <span>WIN CHANCE</span>
+            <span>{winChance}</span>
           </div>
         ) : null}
         <div className="al-kv">
