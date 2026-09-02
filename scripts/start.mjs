@@ -9,15 +9,20 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-console.info("[start] syncing database schema…");
+console.info("[start] applying database migrations…");
 try {
   run("npx prisma migrate deploy");
   console.info("[start] migrations applied");
-} catch {
-  console.warn("[start] migrate deploy failed — trying db push…");
-  run("npx prisma db push --skip-generate");
-  console.info("[start] schema pushed");
+} catch (error) {
+  console.error("[start] migrate deploy failed");
+  if (error instanceof Error && error.message) {
+    console.error(error.message);
+  }
+  process.exit(1);
 }
+
+console.info("[start] verifying raffle schema…");
+run("node scripts/ensure-raffle-columns.mjs");
 
 console.info("[start] launching Next.js…");
 run("next start");
