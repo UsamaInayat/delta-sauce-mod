@@ -84,6 +84,9 @@ model Raffle {
   title         String
   phase         String?
   artist        String?
+  artistXUrl    String?
+  mintPrice     String?
+  supply        String?
   description   String       @default("") @db.Text
   type          RaffleType   @default(LUCKY_DRAW)
   status        RaffleStatus @default(DRAFT)

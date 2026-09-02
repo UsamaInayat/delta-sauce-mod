@@ -9,6 +9,23 @@ import {
   buildRafflePasswordUpdate,
   validatePasswordProtectedForPublish,
 } from "@/lib/raffles/raffle-password-fields";
+import { normalizeXProfileUrl } from "@/lib/raffles/artist-x";
+
+function parseOptionalText(value: unknown) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed || null;
+}
+
+function parseArtistXUrl(value: unknown, isArtwork: boolean) {
+  if (isArtwork) return null;
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  const normalized = normalizeXProfileUrl(trimmed);
+  if (!normalized) {
+    throw new Error("Enter a valid X / Twitter profile link or handle.");
+  }
+  return normalized;
+}
 
 function parseOptionalDate(value: unknown) {
   return parseStoredDateTime(value);
@@ -24,6 +41,9 @@ function buildUpdateData(body: Record<string, unknown>) {
     title: title || undefined,
     phase: isArtwork ? null : (body.phase as string | null | undefined) ?? null,
     artist: isArtwork ? null : (body.artist as string | null | undefined) ?? null,
+    artistXUrl: parseArtistXUrl(body.artistXUrl, isArtwork),
+    mintPrice: parseOptionalText(body.mintPrice),
+    supply: parseOptionalText(body.supply),
     description: isArtwork ? "" : String(body.description ?? ""),
     type: body.type as RaffleType | undefined,
     chain: body.chain as import("@prisma/client").RaffleChain | undefined,
@@ -97,12 +117,21 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid ends at time" }, { status: 400 });
   }
 
+  let updateData;
+  try {
+    updateData = buildUpdateData(body);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Invalid raffle data" },
+      { status: 400 },
+    );
+  }
+
   const existing = await prisma.raffle.findUnique({ where: { id } });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const updateData = buildUpdateData(body);
   if (existing.status !== RaffleStatus.DRAFT) {
     delete (updateData as { passwordProtected?: boolean }).passwordProtected;
   } else {

@@ -15,6 +15,7 @@ export type DeltaReadmeDetails = {
   dropDate?: string;
   usedFor?: string;
   artist: string;
+  artistUrl?: string | null;
   eligibleCollections?: string[];
 };
 
@@ -37,6 +38,7 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
     dropDate = "TBA",
     usedFor = "SELECT DROPS",
     artist,
+    artistUrl,
     eligibleCollections = [],
   } = details;
 
@@ -106,7 +108,15 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
         </div>
         <div className="al-kv">
           <span>BY</span>
-          <span>{artist}</span>
+          <span>
+            {artistUrl ? (
+              <a href={artistUrl} target="_blank" rel="noopener noreferrer">
+                {artist}
+              </a>
+            ) : (
+              artist
+            )}
+          </span>
         </div>
 
         {eligibleCollections.length > 0 ? (

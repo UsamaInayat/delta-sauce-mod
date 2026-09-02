@@ -26,6 +26,9 @@ type RafflePayload = {
   title: string;
   phase: string | null;
   artist: string | null;
+  artistXUrl: string | null;
+  mintPrice: string | null;
+  supply: string | null;
   description: string;
   type: string;
   chain: string;
@@ -305,11 +308,12 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         raffle.winChance && !raffle.result?.finalized
           ? raffle.winChance.label
           : undefined,
-      supply: "TBA",
-      mintPrice: "TBA",
+      supply: raffle.supply?.trim() || "TBA",
+      mintPrice: raffle.mintPrice?.trim() || "TBA",
       dropDate: formatLocalDateTime(raffle.endsAt),
       usedFor: raffle.phase ?? raffle.type.replace(/_/g, " "),
       artist: raffle.artist ?? "DeltaSauce",
+      artistUrl: raffle.artistXUrl,
       eligibleCollections: raffle.collections.map((c) => c.name),
     };
   }, [raffle]);

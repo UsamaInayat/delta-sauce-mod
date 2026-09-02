@@ -6,6 +6,7 @@ import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import { TimePresetTag } from "@/components/admin/time-preset-tag";
 import { toDateTimeLocalInputValue, parseDateTimeLocalValue, localInputToIso } from "@/lib/datetime/local-input";
+import { isValidXProfileUrl } from "@/lib/raffles/artist-x";
 
 const RAFFLE_TYPES = [
   { value: "LUCKY_DRAW", label: "Lucky Draw" },
@@ -32,6 +33,9 @@ type LoadedRaffle = {
   title: string;
   phase: string | null;
   artist: string | null;
+  artistXUrl: string | null;
+  mintPrice: string | null;
+  supply: string | null;
   description: string;
   type: string;
   status: string;
@@ -54,6 +58,9 @@ function raffleToForm(raffle: LoadedRaffle) {
     title: raffle.title ?? "",
     phase: raffle.phase ?? "",
     artist: raffle.artist ?? "",
+    artistXUrl: raffle.artistXUrl ?? "",
+    mintPrice: raffle.mintPrice ?? "",
+    supply: raffle.supply ?? "",
     description: raffle.description ?? "",
     type: raffle.type ?? "LUCKY_DRAW",
     chain: raffle.chain ?? "ETHEREUM",
@@ -95,6 +102,9 @@ export default function AdminRaffleForm({
     title: "",
     phase: "",
     artist: "",
+    artistXUrl: "",
+    mintPrice: "",
+    supply: "",
     description: "",
     type: "LUCKY_DRAW",
     chain: "ETHEREUM",
@@ -211,6 +221,10 @@ export default function AdminRaffleForm({
           ? "Item name is required."
           : "Raffle title is required.",
       );
+      return false;
+    }
+    if (form.artistXUrl.trim() && !isValidXProfileUrl(form.artistXUrl)) {
+      setMessage("Enter a valid X / Twitter profile link or handle.");
       return false;
     }
     return true;
@@ -391,14 +405,46 @@ export default function AdminRaffleForm({
               </label>
             </div>
 
-            <label className="al-admin-label">
-              Artist
-              <input
-                className="al-admin-input"
-                value={form.artist}
-                onChange={(e) => setForm({ ...form, artist: e.target.value })}
-              />
-            </label>
+            <div className="al-admin-field-row">
+              <label className="al-admin-label">
+                Artist
+                <input
+                  className="al-admin-input"
+                  value={form.artist}
+                  onChange={(e) => setForm({ ...form, artist: e.target.value })}
+                />
+              </label>
+              <label className="al-admin-label">
+                X account
+                <input
+                  className="al-admin-input"
+                  value={form.artistXUrl}
+                  onChange={(e) => setForm({ ...form, artistXUrl: e.target.value })}
+                  placeholder="https://x.com/artist or @handle"
+                />
+              </label>
+            </div>
+
+            <div className="al-admin-field-row">
+              <label className="al-admin-label">
+                Mint price
+                <input
+                  className="al-admin-input"
+                  value={form.mintPrice}
+                  onChange={(e) => setForm({ ...form, mintPrice: e.target.value })}
+                  placeholder="0.08 ETH"
+                />
+              </label>
+              <label className="al-admin-label">
+                Supply
+                <input
+                  className="al-admin-input"
+                  value={form.supply}
+                  onChange={(e) => setForm({ ...form, supply: e.target.value })}
+                  placeholder="333"
+                />
+              </label>
+            </div>
 
             <label className="al-admin-label">
               Description
@@ -413,6 +459,29 @@ export default function AdminRaffleForm({
               />
             </label>
           </>
+        ) : null}
+
+        {isArtwork ? (
+          <div className="al-admin-field-row">
+            <label className="al-admin-label">
+              Mint price
+              <input
+                className="al-admin-input"
+                value={form.mintPrice}
+                onChange={(e) => setForm({ ...form, mintPrice: e.target.value })}
+                placeholder="0.08 ETH"
+              />
+            </label>
+            <label className="al-admin-label">
+              Supply
+              <input
+                className="al-admin-input"
+                value={form.supply}
+                onChange={(e) => setForm({ ...form, supply: e.target.value })}
+                placeholder="333"
+              />
+            </label>
+          </div>
         ) : null}
 
         <div className="al-admin-datetime-row">

@@ -6,6 +6,22 @@ import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { fetchOpenseaNft } from "@/lib/blockchain/holdings";
 import { sanitizeRaffleForAdmin } from "@/lib/auth/raffle-password";
 import { buildRafflePasswordUpdate } from "@/lib/raffles/raffle-password-fields";
+import { normalizeXProfileUrl } from "@/lib/raffles/artist-x";
+
+function parseArtistXUrl(value: unknown) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  const normalized = normalizeXProfileUrl(trimmed);
+  if (!normalized) {
+    throw new Error("Enter a valid X / Twitter profile link or handle.");
+  }
+  return normalized;
+}
+
+function parseOptionalText(value: unknown) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed || null;
+}
 
 function slugify(value: string) {
   return value
@@ -77,6 +93,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  let artistXUrl: string | null = null;
+  try {
+    artistXUrl =
+      type === RaffleType.ARTWORK_GIVEAWAY
+        ? null
+        : parseArtistXUrl(body.artistXUrl);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Invalid X account" },
+      { status: 400 },
+    );
+  }
+
   const slugBase = slugify(title);
   let slug = slugBase || `raffle-${Date.now()}`;
   const existing = await prisma.raffle.findUnique({ where: { slug } });
@@ -88,6 +117,9 @@ export async function POST(req: NextRequest) {
       title,
       phase: type === RaffleType.ARTWORK_GIVEAWAY ? null : (body.phase ?? null),
       artist: type === RaffleType.ARTWORK_GIVEAWAY ? null : (body.artist ?? null),
+      artistXUrl,
+      mintPrice: parseOptionalText(body.mintPrice),
+      supply: parseOptionalText(body.supply),
       description:
         type === RaffleType.ARTWORK_GIVEAWAY ? "" : (body.description ?? ""),
       type,
