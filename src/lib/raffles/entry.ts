@@ -4,6 +4,10 @@ import { isRaffleEnterable } from "@/lib/raffles/lifecycle";
 import { closeFcfsIfFull } from "@/lib/raffles/finalize";
 import { assertWalletEligibleForEntry } from "@/lib/raffles/token-gate";
 import {
+  countActiveEntries,
+  isGloballyBlacklisted,
+} from "@/lib/raffles/blacklist";
+import {
   normalizeWallet,
   normalizeXHandle,
   resolveWalletInput,
@@ -18,9 +22,7 @@ export async function getDrawWinChance(raffle: {
   if (!isDrawRaffleType(raffle.type)) return null;
 
   const spots = raffle.winnerCount ?? 1;
-  const entries = await prisma.raffleEntry.count({
-    where: { raffleId: raffle.id, status: EntryStatus.SUBMITTED },
-  });
+  const entries = await countActiveEntries(raffle.id);
 
   return buildDrawWinChance(spots, entries);
 }
@@ -65,20 +67,21 @@ export async function submitEntry(input: {
   if (raffle.type === RaffleType.FCFS) {
     const cap = raffle.winnerCount ?? raffle.spotCap;
     if (cap) {
-      const count = await prisma.raffleEntry.count({
-        where: { raffleId: raffle.id, status: { not: EntryStatus.CANCELLED } },
-      });
+      const count = await countActiveEntries(raffle.id);
       if (count >= cap && !existingWallet) {
         throw new Error("All spots have been filled.");
       }
     }
   }
 
+  const globallyBlocked = await isGloballyBlacklisted(walletAddress, xHandle);
+
   const data = {
     walletAddress,
     walletEns: ens,
     xHandle,
-    status: EntryStatus.SUBMITTED,
+    status: globallyBlocked ? EntryStatus.BLACKLISTED : EntryStatus.SUBMITTED,
+    adminVisible: !globallyBlocked,
   };
 
   const entry = existingWallet
@@ -90,7 +93,9 @@ export async function submitEntry(input: {
         data: { raffleId: raffle.id, ...data },
       });
 
-  await closeFcfsIfFull(raffle.id);
+  if (!globallyBlocked) {
+    await closeFcfsIfFull(raffle.id);
+  }
   return entry;
 }
 
@@ -143,20 +148,28 @@ export async function lookupEntryResult(input: {
   const raffle = await prisma.raffle.findUnique({ where: { id: input.raffleId } });
   if (!raffle) return { found: false as const };
 
+  const isShadowEntry =
+    entry.status === EntryStatus.BLACKLISTED && !entry.adminVisible;
+
   const finalized = raffle.status === "CLOSED";
-  const won = entry.status === EntryStatus.ACCEPTED;
+  const won = !isShadowEntry && entry.status === EntryStatus.ACCEPTED;
   const lost =
     finalized &&
-    (entry.status === EntryStatus.SUBMITTED ||
+    (isShadowEntry ||
+      entry.status === EntryStatus.SUBMITTED ||
       entry.status === EntryStatus.REJECTED ||
       entry.status === EntryStatus.EXCLUDED);
+  const shadowEntered = isShadowEntry;
 
   return {
     found: true as const,
-    entry,
+    entry: isShadowEntry
+      ? { ...entry, status: EntryStatus.SUBMITTED }
+      : entry,
     finalized,
     won,
     lost,
+    shadowEntered,
     wallet: entry.walletAddress,
   };
 }

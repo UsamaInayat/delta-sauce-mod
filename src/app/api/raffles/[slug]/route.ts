@@ -3,6 +3,7 @@ import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { enforceRafflePasswordApi } from "@/lib/auth/raffle-password";
 import { RaffleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { countActiveEntries } from "@/lib/raffles/blacklist";
 import {
   getRaffleLifecycleLabel,
   isRaffleEnterable,
@@ -25,7 +26,6 @@ export async function GET(
     where: { slug, status: { not: RaffleStatus.DRAFT } },
     include: {
       collections: { include: { collection: true } },
-      _count: { select: { entries: true } },
     },
   });
 
@@ -92,7 +92,7 @@ export async function GET(
       collections: raffle.collections.map((rc) => ({
         name: rc.collection.name,
       })),
-      entryCount: raffle._count.entries,
+      entryCount: await countActiveEntries(raffle.id),
       winChance: await getDrawWinChance(raffle),
       userEntry,
       result,

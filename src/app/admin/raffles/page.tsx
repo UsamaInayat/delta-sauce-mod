@@ -159,6 +159,12 @@ export default function SavedRafflesPage() {
                           Finalize
                         </button>
                       ) : null}
+                      <Link
+                        href={`/admin/winners/${r.id}`}
+                        className="al-admin-btn"
+                      >
+                        Explore
+                      </Link>
                       <button
                         type="button"
                         className="al-admin-btn"

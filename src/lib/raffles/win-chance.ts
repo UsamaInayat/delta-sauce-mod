@@ -1,7 +1,12 @@
 const DRAW_RAFFLE_TYPES = new Set(["LUCKY_DRAW", "ARTWORK_GIVEAWAY"]);
+const COLLECTION_RAFFLE_TYPES = new Set(["FCFS", "WALLET_COLLECTION"]);
 
 export function isDrawRaffleType(type: string) {
   return DRAW_RAFFLE_TYPES.has(type);
+}
+
+export function isCollectionRaffleType(type: string) {
+  return COLLECTION_RAFFLE_TYPES.has(type);
 }
 
 export function drawWinChancePercent(spots: number, entries: number) {

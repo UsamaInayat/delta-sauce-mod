@@ -2203,6 +2203,37 @@ body {
   color: #800000 !important;
 }
 
+.delta-admin-shell .al-admin-explore-section {
+  margin-top: 18px !important;
+}
+
+.delta-admin-shell .al-admin-section-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.delta-admin-shell .al-admin-notice {
+  margin: 10px 0 0 !important;
+  font-size: 11px !important;
+  color: #004080 !important;
+}
+
+.delta-admin-shell .al-admin-select-table .al-admin-check-col {
+  width: 28px !important;
+  text-align: center !important;
+}
+
+.delta-admin-shell .al-admin-row-blacklisted td {
+  background: #2a2a2a !important;
+  color: #888 !important;
+  text-decoration: line-through !important;
+}
+
+.delta-admin-shell .al-admin-row-blacklisted input[type="checkbox"] {
+  opacity: 0.7 !important;
+}
+
 /* user-facing windows — full width on desktop teal */
 .arena-portfolio-wrapper .al-desktop {
   justify-content: flex-start !important;

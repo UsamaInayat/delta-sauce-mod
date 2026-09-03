@@ -4,6 +4,7 @@ import {
   RaffleType,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { countActiveEntries } from "@/lib/raffles/blacklist";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 import { shouldExcludeNonHolder } from "@/lib/raffles/token-gate";
 
@@ -183,9 +184,7 @@ export async function closeFcfsIfFull(raffleId: string) {
   const cap = raffle?.winnerCount ?? raffle?.spotCap;
   if (!raffle || raffle.type !== RaffleType.FCFS || !cap) return false;
 
-  const count = await prisma.raffleEntry.count({
-    where: { raffleId, status: EntryStatus.SUBMITTED },
-  });
+  const count = await countActiveEntries(raffleId);
   if (count < cap) return false;
 
   await finalizeRaffle(raffleId);

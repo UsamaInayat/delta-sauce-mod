@@ -37,6 +37,7 @@ enum EntryStatus {
   REJECTED
   CANCELLED
   EXCLUDED
+  BLACKLISTED
 }
 
 model Collection {
@@ -110,10 +111,11 @@ model Raffle {
   artworkCollection String?
 
   collections   RaffleCollection[]
-  entries       RaffleEntry[]
-  snapshots     CollectionSnapshot[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  entries         RaffleEntry[]
+  snapshots       CollectionSnapshot[]
+  blacklistEntries BlacklistEntry[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model RaffleCollection {
@@ -133,6 +135,7 @@ model RaffleEntry {
   walletEns     String?
   xHandle       String
   status        EntryStatus @default(SUBMITTED)
+  adminVisible  Boolean     @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -141,6 +144,20 @@ model RaffleEntry {
   @@unique([raffleId, walletAddress])
   @@unique([raffleId, xHandle])
   @@index([raffleId, status])
+}
+
+model BlacklistEntry {
+  id            String   @id @default(cuid())
+  walletAddress String?
+  xHandle       String?
+  raffleId      String
+  raffleTitle   String
+  createdAt     DateTime @default(now())
+
+  raffle Raffle @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+
+  @@index([walletAddress])
+  @@index([xHandle])
 }
 
 model PlatformGate {

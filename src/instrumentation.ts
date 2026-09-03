@@ -4,8 +4,9 @@ export async function register() {
   const { ensureRaffleSchema } = await import("@/lib/db/ensure-schema");
   try {
     await ensureRaffleSchema();
+    console.info("[schema] database schema verified");
   } catch (error) {
-    console.error("[schema] failed to verify raffle columns");
+    console.error("[schema] failed to verify database schema");
     if (error instanceof Error) console.error(error.message);
   }
 
