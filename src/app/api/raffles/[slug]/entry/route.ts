@@ -3,6 +3,7 @@ import { enforceRaffleGateApi } from "@/lib/auth/gate-api";
 import { enforceRafflePasswordApi } from "@/lib/auth/raffle-password";
 import { prisma } from "@/lib/prisma";
 import { cancelEntry, getDrawWinChance, submitEntry } from "@/lib/raffles/entry";
+import { getClientIp } from "@/lib/request/client-ip";
 
 export async function POST(
   req: NextRequest,
@@ -27,6 +28,7 @@ export async function POST(
       raffleId: raffle.id,
       walletInput: String(body.wallet ?? ""),
       xHandle: String(body.xHandle ?? ""),
+      sourceIp: getClientIp(req),
     });
     const winChance = await getDrawWinChance(raffle);
     return NextResponse.json({ entry, winChance });

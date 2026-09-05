@@ -30,6 +30,14 @@ async function ensureBlacklistSchema() {
   `);
 
   await prisma.$executeRawUnsafe(`
+    ALTER TABLE "RaffleEntry" ADD COLUMN IF NOT EXISTS "sourceIp" TEXT;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "RaffleEntry_sourceIp_adminVisible_idx" ON "RaffleEntry"("sourceIp", "adminVisible");
+  `);
+
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "BlacklistEntry" (
       "id" TEXT NOT NULL,
       "walletAddress" TEXT,

@@ -322,14 +322,17 @@ function GroupChatSnapshotPanel({
             >
               Delta Sauce GC
             </a>{" "}
-            and open <strong>All members</strong>.
+            and paste <code>scripts/x-gc-member-export.js</code> in the console.
           </li>
           <li>
-            Open DevTools → Console and paste the script from{" "}
-            <code>scripts/x-gc-member-export.js</code> in the repo.
+            Click the group name → <strong>All members</strong> (not the chat thread).
           </li>
-          <li>Wait for the scan to finish, then click <strong>Download CSV</strong>.</li>
-          <li>Come back here and click <strong>Import CSV</strong>.</li>
+          <li>Scroll through the full members list once.</li>
+          <li>
+            Click <strong>Auto-scroll collect</strong>, then <strong>Download CSV</strong> or{" "}
+            <strong>Copy CSV</strong>.
+          </li>
+          <li>Import the file here with <strong>Import CSV</strong>.</li>
         </ol>
       </section>
 

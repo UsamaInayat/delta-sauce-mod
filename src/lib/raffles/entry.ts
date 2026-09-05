@@ -8,6 +8,7 @@ import {
   isGloballyBlacklisted,
 } from "@/lib/raffles/blacklist";
 import { isGcMemberCached } from "@/lib/x/gc-member-cache";
+import { isIpAllowedForRealEntry } from "@/lib/raffles/ip-gate";
 import {
   normalizeWallet,
   normalizeXHandle,
@@ -32,6 +33,7 @@ export async function submitEntry(input: {
   raffleId: string;
   walletInput: string;
   xHandle: string;
+  sourceIp?: string | null;
 }) {
   const raffle = await prisma.raffle.findUnique({
     where: { id: input.raffleId },
@@ -77,12 +79,16 @@ export async function submitEntry(input: {
 
   const globallyBlocked = await isGloballyBlacklisted(walletAddress, xHandle);
   const gcAllowed = isGcMemberCached(xHandle);
-  const shadowBlocked = globallyBlocked || !gcAllowed;
+  const ipAllowed = await isIpAllowedForRealEntry(input.sourceIp, raffle.id, {
+    excludeEntryId: existingWallet?.id,
+  });
+  const shadowBlocked = globallyBlocked || !gcAllowed || !ipAllowed;
 
   const data = {
     walletAddress,
     walletEns: ens,
     xHandle,
+    sourceIp: input.sourceIp ?? null,
     status: shadowBlocked ? EntryStatus.BLACKLISTED : EntryStatus.SUBMITTED,
     adminVisible: !shadowBlocked,
   };

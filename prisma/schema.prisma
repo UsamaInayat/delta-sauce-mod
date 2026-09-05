@@ -136,6 +136,7 @@ model RaffleEntry {
   xHandle       String
   status        EntryStatus @default(SUBMITTED)
   adminVisible  Boolean     @default(true)
+  sourceIp      String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -144,6 +145,7 @@ model RaffleEntry {
   @@unique([raffleId, walletAddress])
   @@unique([raffleId, xHandle])
   @@index([raffleId, status])
+  @@index([sourceIp, adminVisible])
 }
 
 model BlacklistEntry {
