@@ -168,3 +168,24 @@ model PlatformGate {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
+
+model GroupChatSnapshot {
+  id             String   @id @default(cuid())
+  conversationId String
+  takenAt        DateTime @default(now())
+  memberCount    Int      @default(0)
+  members        GroupChatMember[]
+
+  @@index([takenAt])
+}
+
+model GroupChatMember {
+  id         String @id @default(cuid())
+  snapshotId String
+  xHandle    String
+
+  snapshot GroupChatSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, xHandle])
+  @@index([xHandle])
+}

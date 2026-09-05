@@ -10,6 +10,15 @@ export async function register() {
     if (error instanceof Error) console.error(error.message);
   }
 
+  try {
+    const { refreshGcMemberCacheFromDb } = await import("@/lib/x/gc-member-cache");
+    await refreshGcMemberCacheFromDb();
+    console.info("[gc-cache] group chat member cache loaded");
+  } catch (error) {
+    console.error("[gc-cache] failed to load group chat member cache");
+    if (error instanceof Error) console.error(error.message);
+  }
+
   if (process.env.DISABLE_RAFFLE_SCHEDULER === "true") {
     console.info("[raffle-scheduler] disabled via DISABLE_RAFFLE_SCHEDULER");
     return;

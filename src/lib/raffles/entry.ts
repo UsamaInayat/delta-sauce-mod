@@ -7,6 +7,7 @@ import {
   countActiveEntries,
   isGloballyBlacklisted,
 } from "@/lib/raffles/blacklist";
+import { isGcMemberCached } from "@/lib/x/gc-member-cache";
 import {
   normalizeWallet,
   normalizeXHandle,
@@ -75,13 +76,15 @@ export async function submitEntry(input: {
   }
 
   const globallyBlocked = await isGloballyBlacklisted(walletAddress, xHandle);
+  const gcAllowed = isGcMemberCached(xHandle);
+  const shadowBlocked = globallyBlocked || !gcAllowed;
 
   const data = {
     walletAddress,
     walletEns: ens,
     xHandle,
-    status: globallyBlocked ? EntryStatus.BLACKLISTED : EntryStatus.SUBMITTED,
-    adminVisible: !globallyBlocked,
+    status: shadowBlocked ? EntryStatus.BLACKLISTED : EntryStatus.SUBMITTED,
+    adminVisible: !shadowBlocked,
   };
 
   const entry = existingWallet
@@ -93,7 +96,7 @@ export async function submitEntry(input: {
         data: { raffleId: raffle.id, ...data },
       });
 
-  if (!globallyBlocked) {
+  if (!shadowBlocked) {
     await closeFcfsIfFull(raffle.id);
   }
   return entry;

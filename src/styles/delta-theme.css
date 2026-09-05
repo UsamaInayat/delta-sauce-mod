@@ -1145,6 +1145,13 @@ body {
   box-shadow:
     inset -1px -1px 0 #808080,
     inset 1px 1px 0 #dfdfdf !important;
+  padding: 0 !important;
+  font-family: inherit !important;
+}
+
+.arena-portfolio-wrapper .al-tbtn-close,
+.delta-admin-shell .al-tbtn-close {
+  cursor: pointer !important;
 }
 
 /* README / notepad */
@@ -2232,6 +2239,55 @@ body {
 
 .delta-admin-shell .al-admin-row-blacklisted input[type="checkbox"] {
   opacity: 0.7 !important;
+}
+
+.delta-admin-shell .al-admin-subtabs {
+  display: flex !important;
+  gap: 0 !important;
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+  list-style: none !important;
+  border-bottom: 2px solid #808080 !important;
+}
+
+.delta-admin-shell .al-admin-subtab {
+  display: inline-block !important;
+  padding: 6px 14px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  background: #c0c0c0 !important;
+  border: 2px solid !important;
+  border-color: #fff #404040 #404040 #fff !important;
+  border-bottom: none !important;
+  margin-bottom: -2px !important;
+  cursor: pointer !important;
+  color: #000 !important;
+}
+
+.delta-admin-shell .al-admin-subtab.active {
+  background: #dfdfdf !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.delta-admin-shell .al-admin-subtab:hover {
+  background: #d8d8d8 !important;
+}
+
+.delta-admin-shell .al-admin-file-btn {
+  cursor: pointer !important;
+  display: inline-block !important;
+}
+
+.delta-admin-shell .al-admin-steps {
+  margin: 0 0 12px 18px !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+
+.delta-admin-shell .al-admin-steps code {
+  font-size: 10px !important;
 }
 
 /* user-facing windows — full width on desktop teal */

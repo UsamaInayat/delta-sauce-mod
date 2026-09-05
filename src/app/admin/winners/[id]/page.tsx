@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { DeltaAdminShell } from "@/components/admin/delta-admin-shell";
 import { DeltaAdminWindow } from "@/components/admin/delta-admin-window";
 import {
@@ -99,6 +98,7 @@ function formatHandle(entry: ExploreEntry) {
 
 export default function ExploreRafflePage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const raffleId = params.id;
   const [data, setData] = useState<ExplorePayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -185,7 +185,11 @@ export default function ExploreRafflePage() {
   if (loading) {
     return (
       <DeltaAdminShell pageTitle="Explore Raffle">
-        <DeltaAdminWindow title="EXPLORE.EXE" wide>
+        <DeltaAdminWindow
+          title="EXPLORE.EXE"
+          wide
+          onClose={() => router.push("/admin/winners")}
+        >
           <p className="al-empty-copy">Loading…</p>
         </DeltaAdminWindow>
       </DeltaAdminShell>
@@ -195,11 +199,12 @@ export default function ExploreRafflePage() {
   if (!data) {
     return (
       <DeltaAdminShell pageTitle="Explore Raffle">
-        <DeltaAdminWindow title="EXPLORE.EXE" wide>
+        <DeltaAdminWindow
+          title="EXPLORE.EXE"
+          wide
+          onClose={() => router.push("/admin/winners")}
+        >
           <p className="al-empty-copy">Raffle not found.</p>
-          <Link href="/admin/winners" className="al-admin-btn">
-            Back to Winners
-          </Link>
         </DeltaAdminWindow>
       </DeltaAdminShell>
     );
@@ -214,7 +219,11 @@ export default function ExploreRafflePage() {
 
   return (
     <DeltaAdminShell pageTitle={`Explore — ${raffle.title}`}>
-      <DeltaAdminWindow title="EXPLORE.EXE" wide>
+      <DeltaAdminWindow
+        title="EXPLORE.EXE"
+        wide
+        onClose={() => router.push("/admin/winners")}
+      >
         <div className="al-admin-toolbar">
           <div>
             <h1 className="arena-form-title">{raffle.title}</h1>
@@ -223,9 +232,6 @@ export default function ExploreRafflePage() {
               {raffle.finalized ? " · Finalized" : " · Open / pending finalize"}
             </p>
           </div>
-          <Link href="/admin/winners" className="al-admin-btn">
-            Back
-          </Link>
         </div>
 
         {message ? <p className="al-admin-notice">{message}</p> : null}
