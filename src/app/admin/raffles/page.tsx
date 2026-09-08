@@ -15,7 +15,8 @@ type SavedRaffle = {
   status: string;
   startsAt: string | null;
   endsAt: string | null;
-  _count: { entries: number };
+  activeEntryCount: number;
+  shadowEntryCount: number;
 };
 
 export default function SavedRafflesPage() {
@@ -133,7 +134,15 @@ export default function SavedRafflesPage() {
                     </td>
                     <td>{r.type.replace(/_/g, " ")}</td>
                     <td>{lifecycle}</td>
-                    <td>{r._count.entries}</td>
+                    <td>
+                      {r.activeEntryCount}
+                      {r.shadowEntryCount > 0 ? (
+                        <span className="arena-form-sub" title="Blocked shadow entries (not counted publicly)">
+                          {" "}
+                          (+{r.shadowEntryCount} blocked)
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="al-admin-actions">
                       <Link
                         href={`/admin/raffles/${r.id}/edit`}

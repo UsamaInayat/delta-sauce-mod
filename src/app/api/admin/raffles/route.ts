@@ -1,7 +1,8 @@
+import { EntryStatus, RaffleStatus, RaffleType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { RaffleStatus, RaffleType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth/admin-session";
+import { prisma } from "@/lib/prisma";
+import { ACTIVE_ENTRY_STATUSES } from "@/lib/raffles/blacklist";
 import { parseStoredDateTime } from "@/lib/datetime/local-input";
 import { fetchOpenseaNft } from "@/lib/blockchain/holdings";
 import { sanitizeRaffleForAdmin } from "@/lib/auth/raffle-password";
@@ -41,11 +42,43 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
     include: {
       collections: { include: { collection: true } },
-      _count: { select: { entries: true } },
     },
   });
+
+  const raffleIds = raffles.map((raffle) => raffle.id);
+  const [activeCounts, shadowCounts] = await Promise.all([
+    prisma.raffleEntry.groupBy({
+      by: ["raffleId"],
+      where: {
+        raffleId: { in: raffleIds },
+        status: { in: ACTIVE_ENTRY_STATUSES },
+      },
+      _count: { _all: true },
+    }),
+    prisma.raffleEntry.groupBy({
+      by: ["raffleId"],
+      where: {
+        raffleId: { in: raffleIds },
+        status: EntryStatus.BLACKLISTED,
+        adminVisible: false,
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const activeByRaffle = new Map(
+    activeCounts.map((row) => [row.raffleId, row._count._all]),
+  );
+  const shadowByRaffle = new Map(
+    shadowCounts.map((row) => [row.raffleId, row._count._all]),
+  );
+
   return NextResponse.json({
-    raffles: raffles.map((raffle) => sanitizeRaffleForAdmin(raffle)),
+    raffles: raffles.map((raffle) => ({
+      ...sanitizeRaffleForAdmin(raffle),
+      activeEntryCount: activeByRaffle.get(raffle.id) ?? 0,
+      shadowEntryCount: shadowByRaffle.get(raffle.id) ?? 0,
+    })),
   });
 }
 

@@ -15,10 +15,73 @@ let cache: GcMemberCache = {
   snapshotId: null,
 };
 
+let loadPromise: Promise<GcMemberCache> | null = null;
+
+export async function ensureGcCacheReady() {
+  if (cache.handles.size > 0) return cache;
+  if (!loadPromise) {
+    loadPromise = refreshGcMemberCacheFromDb().finally(() => {
+      loadPromise = null;
+    });
+  }
+  return loadPromise;
+}
+
+/** @deprecated Prefer isGcMemberAllowed — sync cache lookup only. */
 export function isGcMemberCached(xHandle: string) {
   const handle = normalizeXHandle(xHandle);
   if (!handle) return false;
   return cache.handles.has(handle);
+}
+
+export type GcMembershipResult =
+  | { allowed: true }
+  | {
+      allowed: false;
+      reason: "invalid handle" | "no snapshot" | "not in snapshot";
+    };
+
+export async function getGcMembershipStatus(
+  xHandle: string,
+): Promise<GcMembershipResult> {
+  const handle = normalizeXHandle(xHandle);
+  if (!handle) {
+    return { allowed: false, reason: "invalid handle" };
+  }
+
+  await ensureGcCacheReady();
+  if (cache.handles.has(handle)) {
+    return { allowed: true };
+  }
+
+  const latest = await prisma.groupChatSnapshot.findFirst({
+    orderBy: { takenAt: "desc" },
+    select: {
+      id: true,
+      members: {
+        where: { xHandle: handle },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  });
+
+  if (!latest) {
+    return { allowed: false, reason: "no snapshot" };
+  }
+
+  if (latest.members.length > 0) {
+    cache.handles.add(handle);
+    cache.snapshotId = latest.id;
+    return { allowed: true };
+  }
+
+  return { allowed: false, reason: "not in snapshot" };
+}
+
+export async function isGcMemberAllowed(xHandle: string) {
+  const status = await getGcMembershipStatus(xHandle);
+  return status.allowed;
 }
 
 export function getGcMemberCacheStats() {

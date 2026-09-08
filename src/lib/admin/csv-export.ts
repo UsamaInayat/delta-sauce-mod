@@ -5,6 +5,7 @@ export type ExploreEntry = {
   xHandle: string;
   status: string;
   blacklisted: boolean;
+  shadowReason?: string;
   createdAt: string;
 };
 

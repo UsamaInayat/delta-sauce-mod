@@ -20,6 +20,7 @@ type ExplorePayload = {
   };
   winners: ExploreEntry[];
   entrants: ExploreEntry[];
+  shadowEntrants: ExploreEntry[];
 };
 
 function SelectableTable({
@@ -79,6 +80,39 @@ function SelectableTable({
                 </td>
                 <td>{formatHandle(row)}</td>
                 <td>{formatWallet(row)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ShadowTable({ rows }: { rows: ExploreEntry[] }) {
+  return (
+    <div className="al-admin-table-wrap">
+      <table className="al-admin-table">
+        <thead>
+          <tr>
+            <th>X Username</th>
+            <th>Wallet Address</th>
+            <th>Blocked reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={3} className="al-empty-copy">
+                No blocked entries.
+              </td>
+            </tr>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.id} className="al-admin-row-blacklisted">
+                <td>{formatHandle(row)}</td>
+                <td>{formatWallet(row)}</td>
+                <td>{row.shadowReason ?? "unknown"}</td>
               </tr>
             ))
           )}
@@ -150,6 +184,29 @@ export default function ExploreRafflePage() {
     return selected.size ? all.filter((row) => selected.has(row.id)) : all;
   }
 
+  async function promoteShadows() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/winners/${raffleId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "promote-shadows" }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        setMessage(payload.error ?? "Promotion failed.");
+        return;
+      }
+      setMessage(
+        `Promoted ${payload.promoted ?? 0} blocked entr${payload.promoted === 1 ? "y" : "ies"}. ${payload.remaining ?? 0} still blocked.`,
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function runAction(
     action: "blacklist" | "reroll",
     table: "winners" | "entrants",
@@ -210,7 +267,7 @@ export default function ExploreRafflePage() {
     );
   }
 
-  const { raffle, winners, entrants } = data;
+  const { raffle, winners, entrants, shadowEntrants } = data;
   const slug = raffle.slug.replace(/[^a-z0-9-]+/gi, "-").replace(/^-|-$/g, "") || "raffle";
   const isDraw = raffle.exploreType === "draw";
   const isCollection = raffle.exploreType === "collection";
@@ -337,6 +394,32 @@ export default function ExploreRafflePage() {
               onToggleAll={() => toggleAll(entrants, entrantSelection, setEntrantSelection)}
               showBlacklisted={isCollection}
             />
+          </section>
+        ) : null}
+
+        {shadowEntrants.length > 0 ? (
+          <section className="al-admin-explore-section">
+            <div className="al-admin-toolbar">
+              <div>
+                <h2 className="al-admin-section-title">
+                  Blocked entries ({shadowEntrants.length})
+                </h2>
+                <p className="arena-form-sub">
+                  These submissions were silently rejected and are not counted on the public page.
+                </p>
+              </div>
+              <div className="al-admin-toolbar-actions">
+                <button
+                  type="button"
+                  className="al-admin-btn"
+                  disabled={busy}
+                  onClick={() => void promoteShadows()}
+                >
+                  Re-evaluate blocked
+                </button>
+              </div>
+            </div>
+            <ShadowTable rows={shadowEntrants} />
           </section>
         ) : null}
       </DeltaAdminWindow>

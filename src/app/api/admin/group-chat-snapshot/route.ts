@@ -35,6 +35,7 @@ export async function GET() {
   return NextResponse.json({
     snapshot: snapshot ? formatSnapshot(snapshot) : null,
     cache,
+    snapshotReady: Boolean(snapshot && snapshot.memberCount > 0),
   });
 }
 

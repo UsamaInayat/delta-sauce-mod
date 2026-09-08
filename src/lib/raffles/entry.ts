@@ -7,7 +7,7 @@ import {
   countActiveEntries,
   isGloballyBlacklisted,
 } from "@/lib/raffles/blacklist";
-import { isGcMemberCached } from "@/lib/x/gc-member-cache";
+import { ensureGcCacheReady, isGcMemberAllowed } from "@/lib/x/gc-member-cache";
 import { isIpAllowedForRealEntry } from "@/lib/raffles/ip-gate";
 import {
   normalizeWallet,
@@ -78,7 +78,8 @@ export async function submitEntry(input: {
   }
 
   const globallyBlocked = await isGloballyBlacklisted(walletAddress, xHandle);
-  const gcAllowed = isGcMemberCached(xHandle);
+  await ensureGcCacheReady();
+  const gcAllowed = await isGcMemberAllowed(xHandle);
   const ipAllowed = await isIpAllowedForRealEntry(input.sourceIp, raffle.id, {
     excludeEntryId: existingWallet?.id,
   });

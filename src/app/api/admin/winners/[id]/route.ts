@@ -8,10 +8,13 @@ import {
   filterAdminEntrants,
   filterAdminWinners,
   getExploreRaffleType,
+  getShadowEntryReason,
   isRaffleFinalized,
+  promoteEligibleShadowEntries,
   rerollCollectionSpots,
   rerollDrawWinners,
 } from "@/lib/raffles/blacklist";
+import { ensureGcCacheReady } from "@/lib/x/gc-member-cache";
 
 function mapEntry(entry: {
   id: string;
@@ -21,6 +24,7 @@ function mapEntry(entry: {
   status: EntryStatus;
   adminVisible: boolean;
   createdAt: Date;
+  shadowReason?: string;
 }) {
   return {
     id: entry.id,
@@ -30,6 +34,7 @@ function mapEntry(entry: {
     status: entry.status,
     adminVisible: entry.adminVisible,
     blacklisted: entry.status === EntryStatus.BLACKLISTED,
+    shadowReason: entry.shadowReason,
     createdAt: entry.createdAt.toISOString(),
   };
 }
@@ -58,6 +63,21 @@ export async function GET(
   const exploreType = getExploreRaffleType(raffle);
   const finalized = isRaffleFinalized(raffle);
 
+  await ensureGcCacheReady();
+
+  const shadowRows = raffle.entries.filter(
+    (entry) =>
+      entry.status === EntryStatus.BLACKLISTED && !entry.adminVisible,
+  );
+  const shadowEntrants = await Promise.all(
+    shadowRows.map(async (entry) =>
+      mapEntry({
+        ...entry,
+        shadowReason: await getShadowEntryReason(entry),
+      }),
+    ),
+  );
+
   const allEntries = raffle.entries.filter(
     (entry) => entry.adminVisible || entry.status !== EntryStatus.BLACKLISTED,
   );
@@ -80,6 +100,7 @@ export async function GET(
     },
     winners,
     entrants: exploreType === "draw" ? drawEntrants : collectionEntrants,
+    shadowEntrants,
   });
 }
 
@@ -119,6 +140,11 @@ export async function POST(
         return NextResponse.json(result);
       }
       const result = await rerollCollectionSpots({ raffleId: id, entryIds });
+      return NextResponse.json(result);
+    }
+
+    if (action === "promote-shadows") {
+      const result = await promoteEligibleShadowEntries(id);
       return NextResponse.json(result);
     }
 

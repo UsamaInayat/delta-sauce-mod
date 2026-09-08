@@ -1,8 +1,10 @@
 import { EntryStatus, RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { closeFcfsIfFull, weightedRandomDraw } from "@/lib/raffles/finalize";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
-import { weightedRandomDraw } from "@/lib/raffles/finalize";
+import { isIpAllowedForRealEntry } from "@/lib/raffles/ip-gate";
 import { isDrawRaffleType, isCollectionRaffleType } from "@/lib/raffles/win-chance";
+import { ensureGcCacheReady, getGcMembershipStatus, isGcMemberAllowed } from "@/lib/x/gc-member-cache";
 import { normalizeWallet, normalizeXHandle } from "@/lib/wallet/validate";
 
 export const ACTIVE_ENTRY_STATUSES: EntryStatus[] = [
@@ -21,6 +23,86 @@ export async function countActiveEntries(raffleId: string) {
       status: { in: ACTIVE_ENTRY_STATUSES },
     },
   });
+}
+
+export async function countShadowEntries(raffleId: string) {
+  return prisma.raffleEntry.count({
+    where: {
+      raffleId,
+      status: EntryStatus.BLACKLISTED,
+      adminVisible: false,
+    },
+  });
+}
+
+export async function getShadowEntryReason(entry: {
+  walletAddress: string;
+  xHandle: string;
+  sourceIp: string | null;
+  raffleId: string;
+  id: string;
+}) {
+  if (await isGloballyBlacklisted(entry.walletAddress, entry.xHandle)) {
+    return "globally blacklisted";
+  }
+  const gcStatus = await getGcMembershipStatus(entry.xHandle);
+  if (!gcStatus.allowed) {
+    if (gcStatus.reason === "no snapshot") {
+      return "group chat snapshot not imported";
+    }
+    if (gcStatus.reason === "invalid handle") {
+      return "invalid X handle";
+    }
+    return "not in group chat snapshot";
+  }
+  if (
+    !(await isIpAllowedForRealEntry(entry.sourceIp, entry.raffleId, {
+      excludeEntryId: entry.id,
+    }))
+  ) {
+    return "duplicate IP";
+  }
+  return "unknown";
+}
+
+export async function promoteEligibleShadowEntries(raffleId: string) {
+  await ensureGcCacheReady();
+
+  const shadows = await prisma.raffleEntry.findMany({
+    where: {
+      raffleId,
+      status: EntryStatus.BLACKLISTED,
+      adminVisible: false,
+    },
+  });
+
+  let promoted = 0;
+  for (const entry of shadows) {
+    const globallyBlocked = await isGloballyBlacklisted(
+      entry.walletAddress,
+      entry.xHandle,
+    );
+    const gcAllowed = await isGcMemberAllowed(entry.xHandle);
+    const ipAllowed = await isIpAllowedForRealEntry(entry.sourceIp, raffleId, {
+      excludeEntryId: entry.id,
+    });
+    if (globallyBlocked || !gcAllowed || !ipAllowed) continue;
+
+    await prisma.raffleEntry.update({
+      where: { id: entry.id },
+      data: {
+        status: EntryStatus.SUBMITTED,
+        adminVisible: true,
+      },
+    });
+    promoted += 1;
+  }
+
+  if (promoted > 0) {
+    await closeFcfsIfFull(raffleId);
+  }
+
+  return { promoted, remaining: shadows.length - promoted };
 }
 
 export async function isGloballyBlacklisted(
