@@ -29,14 +29,17 @@ function SelectableTable({
   onToggle,
   onToggleAll,
   showBlacklisted = false,
+  showReason = false,
 }: {
   rows: ExploreEntry[];
   selected: Set<string>;
   onToggle: (id: string) => void;
   onToggleAll: () => void;
   showBlacklisted?: boolean;
+  showReason?: boolean;
 }) {
   const allSelected = rows.length > 0 && rows.every((row) => selected.has(row.id));
+  const colSpan = showReason ? 4 : 3;
 
   return (
     <div className="al-admin-table-wrap">
@@ -53,12 +56,13 @@ function SelectableTable({
             </th>
             <th>X Username</th>
             <th>Wallet Address</th>
+            {showReason ? <th>Blocked reason</th> : null}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={3} className="al-empty-copy">
+              <td colSpan={colSpan} className="al-empty-copy">
                 No rows yet.
               </td>
             </tr>
@@ -80,39 +84,7 @@ function SelectableTable({
                 </td>
                 <td>{formatHandle(row)}</td>
                 <td>{formatWallet(row)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ShadowTable({ rows }: { rows: ExploreEntry[] }) {
-  return (
-    <div className="al-admin-table-wrap">
-      <table className="al-admin-table">
-        <thead>
-          <tr>
-            <th>X Username</th>
-            <th>Wallet Address</th>
-            <th>Blocked reason</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={3} className="al-empty-copy">
-                No blocked entries.
-              </td>
-            </tr>
-          ) : (
-            rows.map((row) => (
-              <tr key={row.id} className="al-admin-row-blacklisted">
-                <td>{formatHandle(row)}</td>
-                <td>{formatWallet(row)}</td>
-                <td>{row.shadowReason ?? "unknown"}</td>
+                {showReason ? <td>{row.shadowReason ?? "unknown"}</td> : null}
               </tr>
             ))
           )}
@@ -123,7 +95,7 @@ function ShadowTable({ rows }: { rows: ExploreEntry[] }) {
 }
 
 function formatWallet(entry: ExploreEntry) {
-  return entry.walletEns ?? entry.walletAddress;
+  return entry.walletAddress;
 }
 
 function formatHandle(entry: ExploreEntry) {
@@ -139,6 +111,7 @@ export default function ExploreRafflePage() {
   const [busy, setBusy] = useState(false);
   const [winnerSelection, setWinnerSelection] = useState<Set<string>>(new Set());
   const [entrantSelection, setEntrantSelection] = useState<Set<string>>(new Set());
+  const [shadowSelection, setShadowSelection] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -151,6 +124,7 @@ export default function ExploreRafflePage() {
     setData(payload);
     setWinnerSelection(new Set());
     setEntrantSelection(new Set());
+    setShadowSelection(new Set());
   }, [raffleId]);
 
   useEffect(() => {
@@ -184,22 +158,30 @@ export default function ExploreRafflePage() {
     return selected.size ? all.filter((row) => selected.has(row.id)) : all;
   }
 
-  async function promoteShadows() {
+  async function unblockSelected() {
+    if (shadowSelection.size === 0) {
+      setMessage("Select one or more blocked entries first.");
+      return;
+    }
+
     setBusy(true);
     setMessage(null);
     try {
       const res = await fetch(`/api/admin/winners/${raffleId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "promote-shadows" }),
+        body: JSON.stringify({
+          action: "unblock-shadows",
+          entryIds: [...shadowSelection],
+        }),
       });
       const payload = await res.json();
       if (!res.ok) {
-        setMessage(payload.error ?? "Promotion failed.");
+        setMessage(payload.error ?? "Unblock failed.");
         return;
       }
       setMessage(
-        `Promoted ${payload.promoted ?? 0} blocked entr${payload.promoted === 1 ? "y" : "ies"}. ${payload.remaining ?? 0} still blocked.`,
+        `Unblocked ${payload.unblocked ?? 0} entr${payload.unblocked === 1 ? "y" : "ies"}.`,
       );
       await load();
     } finally {
@@ -405,21 +387,28 @@ export default function ExploreRafflePage() {
                   Blocked entries ({shadowEntrants.length})
                 </h2>
                 <p className="arena-form-sub">
-                  These submissions were silently rejected and are not counted on the public page.
+                  Blocked entries are synced to the Blacklist tab. Select rows and unblock to allowlist them.
                 </p>
               </div>
               <div className="al-admin-toolbar-actions">
                 <button
                   type="button"
-                  className="al-admin-btn"
-                  disabled={busy}
-                  onClick={() => void promoteShadows()}
+                  className="al-admin-btn primary"
+                  disabled={busy || shadowSelection.size === 0}
+                  onClick={() => void unblockSelected()}
                 >
-                  Re-evaluate blocked
+                  Unblock
                 </button>
               </div>
             </div>
-            <ShadowTable rows={shadowEntrants} />
+            <SelectableTable
+              rows={shadowEntrants}
+              selected={shadowSelection}
+              onToggle={(id) => toggleSelection(shadowSelection, setShadowSelection, id)}
+              onToggleAll={() => toggleAll(shadowEntrants, shadowSelection, setShadowSelection)}
+              showBlacklisted
+              showReason
+            />
           </section>
         ) : null}
       </DeltaAdminWindow>

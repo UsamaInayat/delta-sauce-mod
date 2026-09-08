@@ -12,6 +12,10 @@ export function isValidWalletOrEns(value: string) {
   return WALLET_PATTERN.test(v) || isEns(v);
 }
 
+export function isHexWallet(value: string) {
+  return WALLET_PATTERN.test(value.trim());
+}
+
 export function normalizeWallet(address: string) {
   return address.trim().toLowerCase();
 }
@@ -56,4 +60,28 @@ export async function resolveWalletInput(input: string): Promise<{
     return { address, ens: trimmed.toLowerCase() };
   }
   throw new Error("Enter a valid ETH address (0x…) or ENS name.");
+}
+
+export async function resolveStoredWallet(entry: {
+  walletAddress: string;
+  walletEns: string | null;
+}): Promise<{ walletAddress: string; walletEns: string | null }> {
+  if (isHexWallet(entry.walletAddress)) {
+    return entry;
+  }
+
+  const ensName = entry.walletEns ?? entry.walletAddress;
+  if (!isEns(ensName)) {
+    return entry;
+  }
+
+  const address = await resolveEns(ensName);
+  if (!address) {
+    return entry;
+  }
+
+  return {
+    walletAddress: address,
+    walletEns: ensName.toLowerCase(),
+  };
 }

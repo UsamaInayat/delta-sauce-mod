@@ -4,7 +4,7 @@ import { closeFcfsIfFull, weightedRandomDraw } from "@/lib/raffles/finalize";
 import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
 import { isIpAllowedForRealEntry } from "@/lib/raffles/ip-gate";
 import { isDrawRaffleType, isCollectionRaffleType } from "@/lib/raffles/win-chance";
-import { ensureGcCacheReady, getGcMembershipStatus, isGcMemberAllowed } from "@/lib/x/gc-member-cache";
+import { getGcMembershipStatus } from "@/lib/x/gc-member-cache";
 import { normalizeWallet, normalizeXHandle } from "@/lib/wallet/validate";
 
 export const ACTIVE_ENTRY_STATUSES: EntryStatus[] = [
@@ -42,9 +42,6 @@ export async function getShadowEntryReason(entry: {
   raffleId: string;
   id: string;
 }) {
-  if (await isGloballyBlacklisted(entry.walletAddress, entry.xHandle)) {
-    return "globally blacklisted";
-  }
   const gcStatus = await getGcMembershipStatus(entry.xHandle);
   if (!gcStatus.allowed) {
     if (gcStatus.reason === "no snapshot") {
@@ -62,32 +59,82 @@ export async function getShadowEntryReason(entry: {
   ) {
     return "duplicate IP";
   }
+  if (await isGloballyBlacklisted(entry.walletAddress, entry.xHandle)) {
+    return "on blacklist";
+  }
   return "unknown";
 }
 
-export async function promoteEligibleShadowEntries(raffleId: string) {
-  await ensureGcCacheReady();
+export async function ensureBlacklistPair(input: {
+  walletAddress: string;
+  xHandle: string;
+  raffleId: string;
+  raffleTitle: string;
+}) {
+  const walletAddress = normalizeWallet(input.walletAddress);
+  const xHandle = normalizeXHandle(input.xHandle);
+
+  const existing = await prisma.blacklistEntry.findFirst({
+    where: { walletAddress, xHandle },
+  });
+  if (existing) return existing;
+
+  return prisma.blacklistEntry.create({
+    data: {
+      walletAddress,
+      xHandle,
+      raffleId: input.raffleId,
+      raffleTitle: input.raffleTitle,
+    },
+  });
+}
+
+export async function syncShadowEntryToBlacklist(
+  entry: { walletAddress: string; xHandle: string },
+  raffle: { id: string; title: string },
+) {
+  return ensureBlacklistPair({
+    walletAddress: entry.walletAddress,
+    xHandle: entry.xHandle,
+    raffleId: raffle.id,
+    raffleTitle: raffle.title,
+  });
+}
+
+export async function removeBlacklistPair(
+  walletAddress: string,
+  xHandle: string,
+) {
+  const wallet = normalizeWallet(walletAddress);
+  const handle = normalizeXHandle(xHandle);
+  await prisma.blacklistEntry.deleteMany({
+    where: { walletAddress: wallet, xHandle: handle },
+  });
+}
+
+export async function unblockShadowEntries(input: {
+  raffleId: string;
+  entryIds: string[];
+}) {
+  if (!input.entryIds.length) {
+    throw new Error("Select one or more blocked entries.");
+  }
 
   const shadows = await prisma.raffleEntry.findMany({
     where: {
-      raffleId,
+      id: { in: input.entryIds },
+      raffleId: input.raffleId,
       status: EntryStatus.BLACKLISTED,
       adminVisible: false,
     },
   });
 
-  let promoted = 0;
-  for (const entry of shadows) {
-    const globallyBlocked = await isGloballyBlacklisted(
-      entry.walletAddress,
-      entry.xHandle,
-    );
-    const gcAllowed = await isGcMemberAllowed(entry.xHandle);
-    const ipAllowed = await isIpAllowedForRealEntry(entry.sourceIp, raffleId, {
-      excludeEntryId: entry.id,
-    });
-    if (globallyBlocked || !gcAllowed || !ipAllowed) continue;
+  if (!shadows.length) {
+    throw new Error("No matching blocked entries found.");
+  }
 
+  let unblocked = 0;
+  for (const entry of shadows) {
     await prisma.raffleEntry.update({
       where: { id: entry.id },
       data: {
@@ -95,14 +142,15 @@ export async function promoteEligibleShadowEntries(raffleId: string) {
         adminVisible: true,
       },
     });
-    promoted += 1;
+    await removeBlacklistPair(entry.walletAddress, entry.xHandle);
+    unblocked += 1;
   }
 
-  if (promoted > 0) {
-    await closeFcfsIfFull(raffleId);
+  if (unblocked > 0) {
+    await closeFcfsIfFull(input.raffleId);
   }
 
-  return { promoted, remaining: shadows.length - promoted };
+  return { unblocked };
 }
 
 export async function isGloballyBlacklisted(
@@ -130,23 +178,11 @@ async function addToGlobalBlacklist(
   raffleTitle: string,
 ) {
   for (const entry of entries) {
-    const walletAddress = normalizeWallet(entry.walletAddress);
-    const xHandle = normalizeXHandle(entry.xHandle);
-
-    const existing = await prisma.blacklistEntry.findFirst({
-      where: {
-        OR: [{ walletAddress }, { xHandle }],
-      },
-    });
-    if (existing) continue;
-
-    await prisma.blacklistEntry.create({
-      data: {
-        walletAddress,
-        xHandle,
-        raffleId,
-        raffleTitle,
-      },
+    await ensureBlacklistPair({
+      walletAddress: entry.walletAddress,
+      xHandle: entry.xHandle,
+      raffleId,
+      raffleTitle,
     });
   }
 }
@@ -320,29 +356,45 @@ export async function unblacklistEntries(blacklistIds: string[]) {
   });
   if (!records.length) throw new Error("No blacklist records found.");
 
+  let unblacklisted = 0;
   for (const record of records) {
-    const orFilters: Array<{ walletAddress: string } | { xHandle: string }> = [];
-    if (record.walletAddress) {
-      orFilters.push({ walletAddress: record.walletAddress });
-    }
-    if (record.xHandle) {
-      orFilters.push({ xHandle: record.xHandle });
+    if (!record.walletAddress || !record.xHandle) {
+      await prisma.blacklistEntry.delete({ where: { id: record.id } });
+      unblacklisted += 1;
+      continue;
     }
 
-    if (orFilters.length) {
-      await prisma.raffleEntry.updateMany({
-        where: {
-          OR: orFilters,
-          status: EntryStatus.BLACKLISTED,
-        },
-        data: { status: EntryStatus.CANCELLED },
-      });
+    const entries = await prisma.raffleEntry.findMany({
+      where: {
+        walletAddress: record.walletAddress,
+        xHandle: record.xHandle,
+        status: EntryStatus.BLACKLISTED,
+      },
+    });
+
+    for (const entry of entries) {
+      if (entry.adminVisible) {
+        await prisma.raffleEntry.update({
+          where: { id: entry.id },
+          data: { status: EntryStatus.CANCELLED },
+        });
+      } else {
+        await prisma.raffleEntry.update({
+          where: { id: entry.id },
+          data: {
+            status: EntryStatus.SUBMITTED,
+            adminVisible: true,
+          },
+        });
+        await closeFcfsIfFull(entry.raffleId);
+      }
     }
 
     await prisma.blacklistEntry.delete({ where: { id: record.id } });
+    unblacklisted += 1;
   }
 
-  return { unblacklisted: records.length };
+  return { unblacklisted };
 }
 
 export function filterAdminEntrants<

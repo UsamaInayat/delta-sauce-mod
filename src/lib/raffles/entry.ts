@@ -6,6 +6,7 @@ import { assertWalletEligibleForEntry } from "@/lib/raffles/token-gate";
 import {
   countActiveEntries,
   isGloballyBlacklisted,
+  syncShadowEntryToBlacklist,
 } from "@/lib/raffles/blacklist";
 import { ensureGcCacheReady, isGcMemberAllowed } from "@/lib/x/gc-member-cache";
 import { isIpAllowedForRealEntry } from "@/lib/raffles/ip-gate";
@@ -102,6 +103,10 @@ export async function submitEntry(input: {
     : await prisma.raffleEntry.create({
         data: { raffleId: raffle.id, ...data },
       });
+
+  if (shadowBlocked) {
+    await syncShadowEntryToBlacklist(entry, raffle);
+  }
 
   if (!shadowBlocked) {
     await closeFcfsIfFull(raffle.id);

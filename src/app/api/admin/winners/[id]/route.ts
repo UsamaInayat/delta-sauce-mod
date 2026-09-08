@@ -10,11 +10,13 @@ import {
   getExploreRaffleType,
   getShadowEntryReason,
   isRaffleFinalized,
-  promoteEligibleShadowEntries,
+  syncShadowEntryToBlacklist,
+  unblockShadowEntries,
   rerollCollectionSpots,
   rerollDrawWinners,
 } from "@/lib/raffles/blacklist";
 import { ensureGcCacheReady } from "@/lib/x/gc-member-cache";
+import { resolveStoredWallet } from "@/lib/wallet/validate";
 
 function mapEntry(entry: {
   id: string;
@@ -65,10 +67,33 @@ export async function GET(
 
   await ensureGcCacheReady();
 
-  const shadowRows = raffle.entries.filter(
+  const entries = await Promise.all(
+    raffle.entries.map(async (entry) => {
+      const resolved = await resolveStoredWallet(entry);
+      if (
+        resolved.walletAddress !== entry.walletAddress ||
+        resolved.walletEns !== entry.walletEns
+      ) {
+        await prisma.raffleEntry.update({
+          where: { id: entry.id },
+          data: resolved,
+        });
+      }
+      return { ...entry, ...resolved };
+    }),
+  );
+
+  const shadowRows = entries.filter(
     (entry) =>
       entry.status === EntryStatus.BLACKLISTED && !entry.adminVisible,
   );
+
+  await Promise.all(
+    shadowRows.map((entry) =>
+      syncShadowEntryToBlacklist(entry, raffle),
+    ),
+  );
+
   const shadowEntrants = await Promise.all(
     shadowRows.map(async (entry) =>
       mapEntry({
@@ -78,7 +103,7 @@ export async function GET(
     ),
   );
 
-  const allEntries = raffle.entries.filter(
+  const allEntries = entries.filter(
     (entry) => entry.adminVisible || entry.status !== EntryStatus.BLACKLISTED,
   );
 
@@ -143,8 +168,11 @@ export async function POST(
       return NextResponse.json(result);
     }
 
-    if (action === "promote-shadows") {
-      const result = await promoteEligibleShadowEntries(id);
+    if (action === "unblock-shadows") {
+      const result = await unblockShadowEntries({
+        raffleId: id,
+        entryIds,
+      });
       return NextResponse.json(result);
     }
 

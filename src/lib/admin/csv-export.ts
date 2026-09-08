@@ -29,7 +29,13 @@ export function formatWallet(entry: {
   walletAddress: string;
   walletEns: string | null;
 }) {
-  return entry.walletEns ?? entry.walletAddress;
+  return entry.walletAddress;
+}
+
+export function filterExportableEntries(entries: ExploreEntry[]) {
+  return entries.filter(
+    (entry) => !entry.blacklisted && entry.status !== "BLACKLISTED",
+  );
 }
 
 export function formatHandle(entry: { xHandle: string | null }) {
@@ -41,10 +47,11 @@ export function exportEntriesCsv(
   entries: ExploreEntry[],
   includeMeta = false,
 ) {
+  const exportable = filterExportableEntries(entries);
   const headers = includeMeta
     ? ["wallet", "x_handle", "status", "entered_at"]
     : ["wallet", "x_handle"];
-  const lines = entries.map((entry) => {
+  const lines = exportable.map((entry) => {
     const base = [
       csvEscape(formatWallet(entry)),
       csvEscape(formatHandle(entry)),
