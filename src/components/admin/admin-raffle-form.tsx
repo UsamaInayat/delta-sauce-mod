@@ -192,6 +192,8 @@ export default function AdminRaffleForm({
         phase: "",
         artist: "",
         description: "",
+        mintPrice: "",
+        supply: "",
       };
     }
     return { ...form, ...dates, ...passwordPayload };
@@ -459,29 +461,6 @@ export default function AdminRaffleForm({
               />
             </label>
           </>
-        ) : null}
-
-        {isArtwork ? (
-          <div className="al-admin-field-row">
-            <label className="al-admin-label">
-              Mint price
-              <input
-                className="al-admin-input"
-                value={form.mintPrice}
-                onChange={(e) => setForm({ ...form, mintPrice: e.target.value })}
-                placeholder="0.08 ETH"
-              />
-            </label>
-            <label className="al-admin-label">
-              Supply
-              <input
-                className="al-admin-input"
-                value={form.supply}
-                onChange={(e) => setForm({ ...form, supply: e.target.value })}
-                placeholder="333"
-              />
-            </label>
-          </div>
         ) : null}
 
         <div className="al-admin-datetime-row">

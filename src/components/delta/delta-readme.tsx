@@ -33,8 +33,8 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
     entries,
     spots,
     winChance,
-    supply = "TBA",
-    mintPrice = "TBA",
+    supply,
+    mintPrice,
     dropDate = "TBA",
     usedFor = "SELECT DROPS",
     artist,
@@ -90,14 +90,18 @@ export function DeltaReadme({ details, inactive = true }: DeltaReadmeProps) {
             <span>{winChance}</span>
           </div>
         ) : null}
-        <div className="al-kv">
-          <span>SUPPLY</span>
-          <span>{supply}</span>
-        </div>
-        <div className="al-kv">
-          <span>MINT PRICE</span>
-          <span>{mintPrice}</span>
-        </div>
+        {supply ? (
+          <div className="al-kv">
+            <span>SUPPLY</span>
+            <span>{supply}</span>
+          </div>
+        ) : null}
+        {mintPrice ? (
+          <div className="al-kv">
+            <span>MINT PRICE</span>
+            <span>{mintPrice}</span>
+          </div>
+        ) : null}
         <div className="al-kv">
           <span>DROP DATE</span>
           <span>{dropDate}</span>
