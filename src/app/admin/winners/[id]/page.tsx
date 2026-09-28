@@ -193,13 +193,16 @@ export default function ExploreRafflePage() {
     action: "blacklist" | "reroll",
     table: "winners" | "entrants",
     selected: Set<string>,
-    allRows: ExploreEntry[],
   ) {
+    if (selected.size === 0) {
+      setMessage("Select one or more rows first.");
+      return;
+    }
+
     setBusy(true);
     setMessage(null);
     try {
-      const entryIds =
-        selected.size > 0 ? [...selected] : allRows.map((row) => row.id);
+      const entryIds = [...selected];
       const res = await fetch(`/api/admin/winners/${raffleId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -296,9 +299,9 @@ export default function ExploreRafflePage() {
                 <button
                   type="button"
                   className="al-admin-btn"
-                  disabled={busy || winners.length === 0}
+                  disabled={busy || winnerSelection.size === 0}
                   onClick={() =>
-                    void runAction("reroll", "winners", winnerSelection, winners)
+                    void runAction("reroll", "winners", winnerSelection)
                   }
                 >
                   Reroll
@@ -306,9 +309,9 @@ export default function ExploreRafflePage() {
                 <button
                   type="button"
                   className="al-admin-btn"
-                  disabled={busy || winners.length === 0}
+                  disabled={busy || winnerSelection.size === 0}
                   onClick={() =>
-                    void runAction("blacklist", "winners", winnerSelection, winners)
+                    void runAction("blacklist", "winners", winnerSelection)
                   }
                 >
                   Blacklist
@@ -349,9 +352,9 @@ export default function ExploreRafflePage() {
                   <button
                     type="button"
                     className="al-admin-btn"
-                    disabled={busy || entrants.length === 0}
+                    disabled={busy || entrantSelection.size === 0}
                     onClick={() =>
-                      void runAction("reroll", "entrants", entrantSelection, entrants)
+                      void runAction("reroll", "entrants", entrantSelection)
                     }
                   >
                     Reroll
@@ -360,9 +363,9 @@ export default function ExploreRafflePage() {
                 <button
                   type="button"
                   className="al-admin-btn"
-                  disabled={busy || entrants.length === 0}
+                  disabled={busy || entrantSelection.size === 0}
                   onClick={() =>
-                    void runAction("blacklist", "entrants", entrantSelection, entrants)
+                    void runAction("blacklist", "entrants", entrantSelection)
                   }
                 >
                   Blacklist

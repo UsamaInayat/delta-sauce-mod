@@ -350,6 +350,60 @@ export async function rerollCollectionSpots(input: {
   return { released: entries.length, reopened: raffle.status === RaffleStatus.CLOSED };
 }
 
+/** Restore entrant rows after mistaken admin blacklist + global unblacklist (old logic set rows to CANCELLED). */
+export async function repairRaffleEntriesAfterBlacklistMistake(raffleSlug: string) {
+  const raffle = await prisma.raffle.findUnique({
+    where: { slug: raffleSlug },
+    select: { id: true, slug: true, title: true },
+  });
+  if (!raffle) throw new Error(`Raffle not found: ${raffleSlug}`);
+
+  const candidates = await prisma.raffleEntry.findMany({
+    where: {
+      raffleId: raffle.id,
+      OR: [
+        { status: EntryStatus.CANCELLED },
+        {
+          status: EntryStatus.BLACKLISTED,
+          adminVisible: true,
+        },
+      ],
+    },
+    select: { id: true, status: true },
+  });
+
+  if (!candidates.length) {
+    return {
+      raffleId: raffle.id,
+      slug: raffle.slug,
+      restored: 0,
+      byStatusBefore: {},
+    };
+  }
+
+  const byStatusBefore: Record<string, number> = {};
+  for (const row of candidates) {
+    byStatusBefore[row.status] = (byStatusBefore[row.status] ?? 0) + 1;
+  }
+
+  const result = await prisma.raffleEntry.updateMany({
+    where: { id: { in: candidates.map((c) => c.id) } },
+    data: {
+      status: EntryStatus.SUBMITTED,
+      adminVisible: true,
+    },
+  });
+
+  await closeFcfsIfFull(raffle.id);
+
+  return {
+    raffleId: raffle.id,
+    slug: raffle.slug,
+    restored: result.count,
+    byStatusBefore,
+  };
+}
+
 export async function unblacklistEntries(blacklistIds: string[]) {
   const records = await prisma.blacklistEntry.findMany({
     where: { id: { in: blacklistIds } },
@@ -373,21 +427,14 @@ export async function unblacklistEntries(blacklistIds: string[]) {
     });
 
     for (const entry of entries) {
-      if (entry.adminVisible) {
-        await prisma.raffleEntry.update({
-          where: { id: entry.id },
-          data: { status: EntryStatus.CANCELLED },
-        });
-      } else {
-        await prisma.raffleEntry.update({
-          where: { id: entry.id },
-          data: {
-            status: EntryStatus.SUBMITTED,
-            adminVisible: true,
-          },
-        });
-        await closeFcfsIfFull(entry.raffleId);
-      }
+      await prisma.raffleEntry.update({
+        where: { id: entry.id },
+        data: {
+          status: EntryStatus.SUBMITTED,
+          adminVisible: true,
+        },
+      });
+      await closeFcfsIfFull(entry.raffleId);
     }
 
     await prisma.blacklistEntry.delete({ where: { id: record.id } });
