@@ -10,7 +10,12 @@ import {
   isRafflePasswordActive,
   isRafflePubliclyVisible,
 } from "@/lib/raffles/lifecycle";
-import { getDrawWinChance, lookupEntryResult } from "@/lib/raffles/entry";
+import {
+  getDrawWinChance,
+  getPublicDrawWinners,
+  lookupEntryResult,
+} from "@/lib/raffles/entry";
+import { isDrawRaffleType } from "@/lib/raffles/win-chance";
 
 export async function GET(
   req: NextRequest,
@@ -69,6 +74,10 @@ export async function GET(
     }
   }
 
+  const drawWinners = isDrawRaffleType(raffle.type)
+    ? await getPublicDrawWinners(raffle)
+    : null;
+
   return NextResponse.json({
     raffle: {
       slug: raffle.slug,
@@ -96,6 +105,7 @@ export async function GET(
       winChance: await getDrawWinChance(raffle),
       userEntry,
       result,
+      drawWinners,
     },
   });
 }

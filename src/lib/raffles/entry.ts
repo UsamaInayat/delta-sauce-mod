@@ -1,4 +1,4 @@
-import { EntryStatus, RaffleType } from "@prisma/client";
+import { EntryStatus, RaffleStatus, RaffleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isRaffleEnterable } from "@/lib/raffles/lifecycle";
 import { closeFcfsIfFull } from "@/lib/raffles/finalize";
@@ -16,6 +16,33 @@ import {
   resolveWalletInput,
 } from "@/lib/wallet/validate";
 import { buildDrawWinChance, isDrawRaffleType } from "@/lib/raffles/win-chance";
+
+export async function getPublicDrawWinners(raffle: {
+  id: string;
+  type: string;
+  status: RaffleStatus;
+}) {
+  if (!isDrawRaffleType(raffle.type) || raffle.status !== RaffleStatus.CLOSED) {
+    return null;
+  }
+
+  const rows = await prisma.raffleEntry.findMany({
+    where: {
+      raffleId: raffle.id,
+      status: EntryStatus.ACCEPTED,
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      xHandle: true,
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    xHandle: row.xHandle.replace(/^@/, ""),
+  }));
+}
 
 export async function getDrawWinChance(raffle: {
   id: string;

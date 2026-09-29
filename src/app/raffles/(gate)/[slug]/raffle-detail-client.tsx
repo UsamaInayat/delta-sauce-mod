@@ -19,7 +19,8 @@ import {
   hasRafflePasswordTabSession,
   markRafflePasswordTabSession,
 } from "@/lib/auth/gate-browser-session";
-import { drawWinChanceCopy } from "@/lib/raffles/win-chance";
+import { DeltaWinners, type DeltaWinnerRow } from "@/components/delta/delta-winners";
+import { drawWinChanceCopy, isDrawRaffleType } from "@/lib/raffles/win-chance";
 
 type RafflePayload = {
   slug: string;
@@ -59,6 +60,7 @@ type RafflePayload = {
     lost: boolean;
     wallet: string;
   } | null;
+  drawWinners?: DeltaWinnerRow[] | null;
 };
 
 export default function RaffleDetailClient({ slug }: { slug: string }) {
@@ -294,6 +296,8 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
 
   const readme = useMemo(() => {
     if (!raffle) return null;
+    const drawFinalized =
+      isDrawRaffleType(raffle.type) && raffle.drawWinners != null;
     return {
       about: raffle.description.replace(/<[^>]+>/g, "").slice(0, 500),
       status: raffle.lifecycle,
@@ -305,7 +309,7 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
           ? `${raffle.entryCount} / ${raffle.winnerCount ?? raffle.spotCap} FILLED`
           : undefined,
       winChance:
-        raffle.winChance && !raffle.result?.finalized
+        raffle.winChance && !drawFinalized && !raffle.result?.finalized
           ? raffle.winChance.label
           : undefined,
       supply:
@@ -374,6 +378,9 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     );
   }
 
+  const showDrawWinners =
+    isDrawRaffleType(raffle.type) && raffle.drawWinners != null;
+
   return (
     <DeltaShell
       breadcrumb={[{ label: "Raffles", href: "/raffles" }]}
@@ -387,14 +394,21 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
         </Link>
         <div className="al-icon al-selected">
           <span className="al-icon-img al-icon-exe" />
-          <span className="al-icon-label">ENTER.EXE</span>
+          <span className="al-icon-label">
+            {showDrawWinners ? "WINNERS.EXE" : "ENTER.EXE"}
+          </span>
         </div>
       </div>
 
       <div className="al-windows">
         {readme ? <DeltaReadme details={readme} inactive /> : null}
 
-        {raffle.result?.finalized ? (
+        {showDrawWinners ? (
+          <DeltaWinners
+            title={`Winners — ${raffle.title}`}
+            winners={raffle.drawWinners ?? []}
+          />
+        ) : raffle.result?.finalized ? (
           <DeltaWindow title="Results — DeltaSauce">
             <div className="al-dialog-body">
               {raffle.result.won ? (

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/auth/admin-session";
-import { repairRaffleEntriesAfterBlacklistMistake } from "@/lib/raffles/blacklist";
+import { recoverClockingOutGiveaway } from "@/lib/raffles/clocking-out-recovery";
 
 async function authorizeRepair(req: Request) {
   const auth = req.headers.get("authorization");
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await repairRaffleEntriesAfterBlacklistMistake("clocking-out");
+    const result = await recoverClockingOutGiveaway();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(

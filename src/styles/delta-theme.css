@@ -2145,6 +2145,14 @@ body {
   padding-left: 16px !important;
 }
 
+.arena-portfolio-wrapper .al-winner-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-family: var(--al-font-mono, "Courier New", monospace);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* centered admin windows on CRT desktop */
 .delta-admin-shell .al-admin-stage,
 .arena-portfolio-wrapper .al-admin-stage {

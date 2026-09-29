@@ -1,6 +1,23 @@
 import { RaffleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+import {
+  getRaffleLifecycleLabel,
+  isRaffleCronActive,
+} from "@/lib/raffles/lifecycle";
+
+export async function hasActiveRaffleCronWork(now = new Date()) {
+  const published = await prisma.raffle.findMany({
+    where: { status: RaffleStatus.PUBLISHED },
+    select: {
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      closedAt: true,
+    },
+  });
+
+  return published.some((raffle) => isRaffleCronActive(raffle, now));
+}
 
 export async function processDueRaffles() {
   const now = new Date();

@@ -87,3 +87,12 @@ export function isRaffleLockedFromEdits(
   const label = getRaffleLifecycleLabel(raffle, now);
   return label === "ENDED" || label === "FINALIZED";
 }
+
+/** True when a published raffle is scheduled, accepting entries, or awaiting finalize. */
+export function isRaffleCronActive(
+  raffle: RaffleLifecycleInput,
+  now: Date = new Date(),
+) {
+  const label = getRaffleLifecycleLabel(raffle, now);
+  return label === "SCHEDULED" || label === "LIVE" || label === "ENDED";
+}

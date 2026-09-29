@@ -1,10 +1,16 @@
 import { execSync } from "node:child_process";
+import { resolveDatabaseUrl } from "./resolve-database-url.mjs";
 
 function run(command) {
   execSync(command, { stdio: "inherit", env: process.env });
 }
 
 run("npx prisma generate");
+
+const resolvedDatabaseUrl = resolveDatabaseUrl();
+if (resolvedDatabaseUrl) {
+  process.env.DATABASE_URL = resolvedDatabaseUrl;
+}
 
 if (process.env.DATABASE_URL) {
   console.info("[build] applying database migrations…");

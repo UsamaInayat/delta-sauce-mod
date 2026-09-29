@@ -10,7 +10,10 @@ async function runSchedulerTick() {
   if (sweepInFlight) return;
   sweepInFlight = true;
   try {
-    const { processDueRaffles } = await import("@/lib/raffles/process-due");
+    const { hasActiveRaffleCronWork, processDueRaffles } = await import(
+      "@/lib/raffles/process-due"
+    );
+    if (!(await hasActiveRaffleCronWork())) return;
     await processDueRaffles();
   } catch (error) {
     console.error("[raffle-scheduler] tick failed", error);
