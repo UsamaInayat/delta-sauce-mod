@@ -24,6 +24,7 @@ if (process.env.DATABASE_URL) {
       console.warn(error.message);
     }
   }
+
 } else {
   console.warn("[build] DATABASE_URL not set; skipping migrations");
 }
