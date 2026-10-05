@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
-import {
-  hasActiveRaffleCronWork,
-  processDueRaffles,
-} from "@/lib/raffles/process-due";
+import { authorizeCronRequest } from "@/lib/cron/authorize";
+import { runMinimalCronMaintenance } from "@/lib/raffles/cron-minimal";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+/**
+ * Minimal-cost cron for Vercel + external schedulers.
+ *
+ * Default: one COUNT query; finalize only if endsAt has passed.
+ * Add ?maintenance=1 on a rare schedule (e.g. weekly) for password cleanup.
+ */
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth !== `Bearer ${secret}`) {
+  if (!authorizeCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!(await hasActiveRaffleCronWork())) {
-    return NextResponse.json({ ok: true, skipped: true, reason: "no_active_raffles" });
+  const url = new URL(req.url);
+  const passwordCleanup = url.searchParams.get("maintenance") === "1";
+
+  const result = await runMinimalCronMaintenance({ passwordCleanup });
+
+  if ("skipped" in result && result.skipped) {
+    return NextResponse.json(result);
   }
 
-  await processDueRaffles();
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(result);
 }

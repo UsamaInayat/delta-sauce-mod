@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { DeltaRaffleDesktopIcons } from "@/components/delta/delta-raffle-desktop-icons";
 import { gateFetch } from "@/lib/auth/gate-fetch";
-import { usePoll } from "@/lib/hooks/use-poll";
+import { publicRaffleListPollMs, usePoll } from "@/lib/hooks/use-poll";
 import type { PublicRaffleFolder } from "@/lib/raffles/public-folders";
 
 type FolderVisual = "live" | "won" | "lost";
@@ -70,7 +70,8 @@ export function DeltaRaffleDesktop({
     }
   }, [refreshFolderStates]);
 
-  usePoll(refreshRaffles);
+  const listPollMs = publicRaffleListPollMs(raffles);
+  usePoll(refreshRaffles, listPollMs);
 
   useEffect(() => {
     void refreshFolderStates(initialRaffles);

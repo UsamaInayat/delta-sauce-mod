@@ -1,3 +1,5 @@
+import { isVercelDeployment, shouldRunInProcessRaffleScheduler } from "@/lib/deploy/runtime";
+
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
@@ -10,17 +12,23 @@ export async function register() {
     if (error instanceof Error) console.error(error.message);
   }
 
-  try {
-    const { refreshGcMemberCacheFromDb } = await import("@/lib/x/gc-member-cache");
-    await refreshGcMemberCacheFromDb();
-    console.info("[gc-cache] group chat member cache loaded");
-  } catch (error) {
-    console.error("[gc-cache] failed to load group chat member cache");
-    if (error instanceof Error) console.error(error.message);
+  if (!isVercelDeployment()) {
+    try {
+      const { refreshGcMemberCacheFromDb } = await import("@/lib/x/gc-member-cache");
+      await refreshGcMemberCacheFromDb();
+      console.info("[gc-cache] group chat member cache loaded");
+    } catch (error) {
+      console.error("[gc-cache] failed to load group chat member cache");
+      if (error instanceof Error) console.error(error.message);
+    }
+  } else {
+    console.info("[gc-cache] lazy load on Vercel (first gated entry)");
   }
 
-  if (process.env.DISABLE_RAFFLE_SCHEDULER === "true") {
-    console.info("[raffle-scheduler] disabled via DISABLE_RAFFLE_SCHEDULER");
+  if (!shouldRunInProcessRaffleScheduler()) {
+    console.info(
+      "[raffle-scheduler] serverless mode — use Vercel Cron + request-time finalize",
+    );
     return;
   }
 

@@ -158,6 +158,11 @@ export async function PATCH(
     data: updateData,
   });
 
+  if (existing.status === RaffleStatus.PUBLISHED) {
+    const { kickRaffleMaintenance } = await import("@/lib/raffles/maintenance");
+    await kickRaffleMaintenance();
+  }
+
   if (Array.isArray(body.collectionIds)) {
     await prisma.raffleCollection.deleteMany({ where: { raffleId: id } });
     if (body.collectionIds.length) {
@@ -225,6 +230,9 @@ export async function POST(
       },
     });
 
+    const { kickRaffleMaintenance } = await import("@/lib/raffles/maintenance");
+    await kickRaffleMaintenance();
+
     const full = await prisma.raffle.findUnique({
       where: { id },
       include: {
@@ -233,8 +241,18 @@ export async function POST(
       },
     });
 
+    const { suggestedFinalizeCronAt } = await import("@/lib/raffles/cron-minimal");
+    const pingAt = suggestedFinalizeCronAt(full?.endsAt ?? null);
+
     return NextResponse.json({
       raffle: sanitizeRaffleForAdmin(full!),
+      cronHint: pingAt
+        ? {
+            pingAt: pingAt.toISOString(),
+            path: "/api/cron/process",
+            note: "Schedule your external cron once at pingAt (backup if nobody visits the site at close).",
+          }
+        : null,
     });
   }
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gateFetch } from "@/lib/auth/gate-fetch";
 
-const POLL_MS = 2500;
+const POLL_MS = 30_000;
 
 export function RaffleGateWatcher() {
   const wasUnlockedRef = useRef<boolean | null>(null);

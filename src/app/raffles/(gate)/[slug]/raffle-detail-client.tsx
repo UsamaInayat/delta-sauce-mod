@@ -14,7 +14,7 @@ import {
 } from "@/lib/wallet/validate";
 import { formatLocalDateTime } from "@/lib/datetime/local-input";
 import { gateFetch } from "@/lib/auth/gate-fetch";
-import { usePoll } from "@/lib/hooks/use-poll";
+import { raffleDetailPollMs, usePoll } from "@/lib/hooks/use-poll";
 import {
   hasRafflePasswordTabSession,
   markRafflePasswordTabSession,
@@ -171,7 +171,8 @@ export default function RaffleDetailClient({ slug }: { slug: string }) {
     void load();
   }, [load]);
 
-  usePoll(pollRaffle, undefined, gateUnlocked && !gateChecking);
+  const detailPollMs = raffleDetailPollMs(raffle?.lifecycle, raffle?.enterable);
+  usePoll(pollRaffle, detailPollMs, gateUnlocked && !gateChecking);
 
   async function handleGateSubmit(event: FormEvent) {
     event.preventDefault();

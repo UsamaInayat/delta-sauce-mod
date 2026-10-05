@@ -1,22 +1,12 @@
 import { RaffleStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import {
-  getRaffleLifecycleLabel,
-  isRaffleCronActive,
-} from "@/lib/raffles/lifecycle";
+import { getRaffleLifecycleLabel } from "@/lib/raffles/lifecycle";
+import { planRaffleSchedulerTick } from "@/lib/raffles/scheduler-plan";
 
+/** True when a published raffle is on the cron timeline (scheduled, live, or ending). */
 export async function hasActiveRaffleCronWork(now = new Date()) {
-  const published = await prisma.raffle.findMany({
-    where: { status: RaffleStatus.PUBLISHED },
-    select: {
-      status: true,
-      startsAt: true,
-      endsAt: true,
-      closedAt: true,
-    },
-  });
-
-  return published.some((raffle) => isRaffleCronActive(raffle, now));
+  const plan = await planRaffleSchedulerTick(now);
+  return plan.mode === "event_wait" || plan.mode === "finalize_now";
 }
 
 export async function processDueRaffles() {

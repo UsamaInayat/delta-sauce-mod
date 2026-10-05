@@ -1,6 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import { resolveDatabaseUrl } from "./resolve-database-url.mjs";
 
-const prisma = new PrismaClient();
+const databaseUrl = resolveDatabaseUrl();
+const prisma = new PrismaClient(
+  databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {},
+);
 
 async function ensureEntryStatusEnum() {
   try {

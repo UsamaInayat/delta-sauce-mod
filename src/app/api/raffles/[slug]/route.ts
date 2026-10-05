@@ -16,6 +16,7 @@ import {
   lookupEntryResult,
 } from "@/lib/raffles/entry";
 import { isDrawRaffleType } from "@/lib/raffles/win-chance";
+import { triggerAutoFinalizeIfDue } from "@/lib/raffles/auto-finalize";
 
 export async function GET(
   req: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
   const { slug } = await ctx.params;
   const walletQuery = req.nextUrl.searchParams.get("wallet") ?? "";
 
-  const raffle = await prisma.raffle.findFirst({
+  let raffle = await prisma.raffle.findFirst({
     where: { slug, status: { not: RaffleStatus.DRAFT } },
     include: {
       collections: { include: { collection: true } },
@@ -36,6 +37,17 @@ export async function GET(
 
   if (!raffle) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const finalizedNow = await triggerAutoFinalizeIfDue(raffle);
+  if (finalizedNow) {
+    raffle =
+      (await prisma.raffle.findFirst({
+        where: { slug, status: { not: RaffleStatus.DRAFT } },
+        include: {
+          collections: { include: { collection: true } },
+        },
+      })) ?? raffle;
   }
 
   if (!isRafflePubliclyVisible(raffle)) {
